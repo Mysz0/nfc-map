@@ -55,7 +55,6 @@ export default function App() {
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
-  // FIXED LOGOUT
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.href = '/';
@@ -82,15 +81,17 @@ export default function App() {
 
   const totalPoints = unlockedSpots.reduce((sum, id) => sum + (spots[id]?.points || 0), 0);
 
-  // --- REFINED COLOR PALETTE ---
+  // --- PALETTE WITH FROSTED GREEN TINT ---
   const colors = {
-    bg: isDark ? 'bg-zinc-950' : 'bg-[#f4f7f5]', // Very soft mint light mode
+    bg: isDark ? 'bg-zinc-950' : 'bg-[#f4f7f5]',
     card: isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-emerald-100 shadow-emerald-900/5',
-    header: isDark ? 'from-zinc-900 to-zinc-950 border-zinc-800' : 'from-emerald-500 to-emerald-600 border-emerald-400',
+    // Frosted Header: Uses translucent emerald over the base Zinc or White
+    header: isDark 
+      ? 'from-emerald-900/10 via-zinc-900/90 to-zinc-950 border-emerald-500/10' 
+      : 'from-emerald-500/90 to-emerald-600 border-emerald-400',
     text: isDark ? 'text-zinc-100' : 'text-slate-900',
     muted: isDark ? 'text-zinc-500' : 'text-emerald-700/50',
     nav: isDark ? 'bg-zinc-900/95 border-zinc-800' : 'bg-white/95 border-emerald-200',
-    adminPanel: isDark ? 'bg-zinc-900 border-emerald-500/30' : 'bg-emerald-50 border-emerald-200',
   };
 
   if (loading) return (
@@ -115,22 +116,25 @@ export default function App() {
   return (
     <div className={`min-h-screen ${colors.bg} ${colors.text} pb-36 transition-colors duration-500`}>
       
-      {/* HEADER */}
-      <header className={`bg-gradient-to-b ${colors.header} p-10 pt-16 pb-24 rounded-b-[3rem] border-b shadow-2xl relative overflow-hidden`}>
+      {/* FROSTED HEADER */}
+      <header className={`bg-gradient-to-b ${colors.header} backdrop-blur-md p-10 pt-16 pb-24 rounded-b-[3rem] border-b shadow-2xl relative overflow-hidden`}>
+        {/* Subtlest green glow in top corner */}
+        <div className="absolute top-0 left-0 w-32 h-32 bg-emerald-500/5 blur-3xl rounded-full" />
+        
         <div className="max-w-md mx-auto flex justify-between items-center relative z-10">
           <div>
             <h1 className={`text-2xl font-black uppercase tracking-tighter ${isDark ? 'text-emerald-500' : 'text-white'}`}>
               @{username || 'HUNTER'} {isAdmin && "👑"}
             </h1>
-            <p className={`${isDark ? 'text-zinc-500' : 'text-emerald-100'} text-[10px] font-mono font-bold tracking-widest mt-1`}>
+            <p className={`${isDark ? 'text-zinc-500' : 'text-emerald-100/80'} text-[10px] font-mono font-bold tracking-widest mt-1`}>
               {user.email}
             </p>
           </div>
           <div className="flex gap-2">
-            <button onClick={toggleTheme} className={`p-3 rounded-xl border transition-all ${isDark ? 'bg-zinc-800 border-zinc-700 text-emerald-400' : 'bg-white/20 border-white/30 text-white'}`}>
+            <button onClick={toggleTheme} className={`p-3 rounded-xl border transition-all ${isDark ? 'bg-zinc-800/50 border-zinc-700 text-emerald-400 hover:border-emerald-500/50' : 'bg-white/20 border-white/30 text-white'}`}>
               {isDark ? <Sun size={18}/> : <Moon size={18}/>}
             </button>
-            <button onClick={handleLogout} className={`p-3 rounded-xl border transition-all ${isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-500' : 'bg-white/20 border-white/30 text-white'}`}>
+            <button onClick={handleLogout} className={`p-3 rounded-xl border transition-all ${isDark ? 'bg-zinc-800/50 border-zinc-700 text-zinc-500 hover:text-red-400' : 'bg-white/20 border-white/30 text-white'}`}>
               <LogOut size={18}/>
             </button>
           </div>
@@ -140,7 +144,7 @@ export default function App() {
       <div className="max-w-md mx-auto px-6 -mt-12 relative z-20">
         
         {activeTab === 'home' && (
-          <div className="space-y-8">
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <div className={`${colors.card} rounded-[2.5rem] p-8 shadow-xl border flex justify-between items-center`}>
               <div>
                 <p className="text-5xl font-black tracking-tighter leading-none">{totalPoints}</p>
@@ -153,31 +157,26 @@ export default function App() {
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 px-2">Achievements</h2>
-              {unlockedSpots.length === 0 ? (
-                <div className={`${colors.card} rounded-[2rem] p-12 text-center border-2 border-dashed border-emerald-500/10`}>
-                  <p className={`${colors.muted} font-bold text-xs uppercase`}>Inventory Empty</p>
-                </div>
-              ) : (
-                unlockedSpots.map(id => (
-                  <div key={id} className={`${colors.card} p-5 rounded-[2rem] flex items-center justify-between border shadow-sm group hover:border-emerald-500/50 transition-all`}>
-                    <div className="flex items-center gap-4">
-                      <div className="w-11 h-11 bg-emerald-500 text-white rounded-2xl flex items-center justify-center font-black">✓</div>
-                      <div>
-                        <p className="font-black text-sm uppercase tracking-tight">{spots[id]?.name}</p>
-                        <p className="text-[10px] text-emerald-500 font-bold">+{spots[id]?.points} XP</p>
-                      </div>
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 px-2 opacity-70">Inventory</h2>
+              {unlockedSpots.map(id => (
+                <div key={id} className={`${colors.card} p-5 rounded-[2rem] flex items-center justify-between border shadow-sm group hover:scale-[1.01] transition-all`}>
+                  <div className="flex items-center gap-4">
+                    <div className="w-11 h-11 bg-emerald-500 text-white rounded-2xl flex items-center justify-center font-black">✓</div>
+                    <div>
+                      <p className="font-black text-sm uppercase tracking-tight">{spots[id]?.name}</p>
+                      <p className="text-[10px] text-emerald-500 font-bold">+{spots[id]?.points} XP</p>
                     </div>
                   </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
           </div>
         )}
 
         {activeTab === 'explore' && (
           <div className={`${colors.card} rounded-[2.5rem] p-2 shadow-2xl border h-[480px] overflow-hidden`}>
-            <MapContainer key={`${activeTab}-${theme}`} center={mapCenter} zoom={12} className="h-full w-full rounded-[1.8rem]">
+            {/* Attribution control: false removes the link/logo in the corner */}
+            <MapContainer key={`${activeTab}-${theme}`} center={mapCenter} zoom={12} attributionControl={false} className="h-full w-full rounded-[1.8rem]">
               <TileLayer url={isDark ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"} />
               {Object.values(spots).map(spot => (
                 <Marker key={spot.id} position={[spot.lat, spot.lng]}>
@@ -196,12 +195,12 @@ export default function App() {
                   className={`w-full ${isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-emerald-50/50 border-emerald-100'} border-2 rounded-2xl py-4 px-6 font-black outline-none focus:border-emerald-500 transition-all text-sm`}
                 />
               </div>
-              <button onClick={saveUsername} className="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black shadow-lg shadow-emerald-500/20 active:scale-95 transition-all">SAVE IDENTITY</button>
+              <button onClick={saveUsername} className="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black shadow-lg shadow-emerald-500/20 active:scale-95 transition-all uppercase text-xs tracking-widest">Update Profile</button>
            </div>
         )}
 
         {activeTab === 'dev' && isAdmin && (
-           <div className={`${colors.adminPanel} p-8 rounded-[2.5rem] border-4 text-white space-y-6 shadow-xl`}>
+           <div className={`${isDark ? 'bg-zinc-900/50' : 'bg-emerald-50'} backdrop-blur-sm p-8 rounded-[2.5rem] border-2 ${isDark ? 'border-emerald-500/20' : 'border-emerald-200'} text-white space-y-6 shadow-xl`}>
               <h2 className={`font-black uppercase italic flex items-center gap-2 tracking-widest ${isDark ? 'text-emerald-500' : 'text-emerald-800'}`}>
                 <Terminal size={18}/> SYSTEM_ADMIN
               </h2>
@@ -213,9 +212,9 @@ export default function App() {
                       <span className={`text-xs font-black uppercase tracking-tighter ${!isDark && 'text-emerald-950'}`}>{spot.name}</span>
                       <div className="flex gap-2">
                         {isClaimed ? (
-                          <button onClick={() => removeSpot(spot.id)} className="p-2.5 bg-red-500 text-white rounded-xl hover:scale-110 transition-all"><Trash2 size={14}/></button>
+                          <button onClick={() => removeSpot(spot.id)} className="p-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all"><Trash2 size={14}/></button>
                         ) : (
-                          <button onClick={() => claimSpot(spot.id)} className="p-2.5 bg-emerald-500 text-white rounded-xl hover:scale-110 transition-all"><Zap size={14}/></button>
+                          <button onClick={() => claimSpot(spot.id)} className="p-2.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all"><Zap size={14}/></button>
                         )}
                       </div>
                     </div>
