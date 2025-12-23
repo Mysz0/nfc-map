@@ -1,19 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Trophy, User, Home, Compass, LogOut, Terminal, Zap, Trash2, Sun, Moon } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from './supabase'; 
 
 const ADMIN_UID = import.meta.env.VITE_ADMIN_UID;
 
-// Leaflet fix
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-let DefaultIcon = L.icon({ iconUrl: icon, shadowUrl: iconShadow, iconSize: [25, 41], iconAnchor: [12, 41] });
-L.Marker.prototype.options.icon = DefaultIcon;
+// --- SLEEK CUSTOM MARKER ---
+const sleekIcon = (isDark) => L.divIcon({
+  className: 'custom-div-icon',
+  html: `<div style="
+    background-color: #10b981;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 3px solid ${isDark ? '#18181b' : '#ffffff'};
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.6);
+  "></div>`,
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
+});
 
-// Custom Magnetic Hook for the "Real" feel
 const useMagnetic = () => {
   const ref = useRef(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -21,13 +29,12 @@ const useMagnetic = () => {
   const handleMouseMove = (e) => {
     const { clientX, clientY } = e;
     const { left, top, width, height } = ref.current.getBoundingClientRect();
-    const x = (clientX - (left + width / 2)) * 0.35; // Sensitivity
+    const x = (clientX - (left + width / 2)) * 0.35;
     const y = (clientY - (top + height / 2)) * 0.35;
     setPosition({ x, y });
   };
 
   const reset = () => setPosition({ x: 0, y: 0 });
-
   return { ref, position, handleMouseMove, reset };
 };
 
@@ -45,7 +52,6 @@ export default function App() {
   const isAdmin = user?.id === ADMIN_UID;
   const isDark = theme === 'dark';
 
-  // Magnetic Button States
   const themeMag = useMagnetic();
   const logoutMag = useMagnetic();
 
@@ -105,10 +111,11 @@ export default function App() {
 
   const colors = {
     bg: isDark ? 'bg-zinc-950' : 'bg-[#f7faf8]',
-    card: isDark ? 'bg-zinc-900/50 border-white/5' : 'bg-white border-emerald-100/40 shadow-sm',
+    card: isDark ? 'bg-zinc-900/50 border-white/5 shadow-2xl shadow-black/20' : 'bg-white border-emerald-100/40 shadow-sm shadow-emerald-900/5',
+    // BIGGER, SMOOTHER GRADIENT RAMP
     header: isDark 
-      ? 'from-emerald-950/30 via-zinc-900/90 to-zinc-950 border-emerald-500/10' 
-      : 'from-emerald-100/60 via-emerald-50/40 to-[#f7faf8] border-emerald-200/20',
+      ? 'from-emerald-600/10 via-emerald-800/5 via-zinc-900/90 to-zinc-950 border-emerald-500/10' 
+      : 'from-emerald-200/40 via-emerald-100/20 via-emerald-50/50 to-[#f7faf8] border-emerald-200/30',
     text: isDark ? 'text-zinc-100' : 'text-slate-900',
     muted: isDark ? 'text-zinc-500' : 'text-emerald-800/40',
     nav: isDark ? 'bg-zinc-900/60 border-white/5' : 'bg-white/80 border-emerald-100/60',
@@ -136,20 +143,20 @@ export default function App() {
   return (
     <div className={`min-h-screen ${colors.bg} ${colors.text} pb-36 transition-colors duration-500`}>
       
-      {/* DEEP CURVED HEADER */}
-      <header className={`bg-gradient-to-b ${colors.header} backdrop-blur-2xl p-10 pt-16 pb-32 rounded-b-[4.5rem] border-b relative overflow-hidden`}>
-        <div className="absolute top-0 left-0 w-full h-full bg-emerald-500/[0.03] pointer-events-none" />
-        
+      {/* IMPROVED GRADIENT HEADER */}
+      <header className={`bg-gradient-to-b ${colors.header} backdrop-blur-3xl p-10 pt-16 pb-32 rounded-b-[4.5rem] border-b relative overflow-hidden`}>
         <div className="max-w-md mx-auto flex justify-between items-center relative z-10">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-emerald-500 mb-1 opacity-90">Current Explorer</p>
+            <div className="flex items-center gap-2 mb-1">
+               <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-emerald-500 opacity-90">Session Active</p>
+               {isAdmin && <span className="text-[8px] font-black tracking-widest text-zinc-500 uppercase border border-zinc-500/30 px-1.5 rounded-sm">Admin Privileges</span>}
+            </div>
             <h1 className="text-2xl font-bold tracking-tight">
-              @{username || 'Hunter'} {isAdmin && <span className="text-emerald-500">★</span>}
+              @{username || 'Hunter'}
             </h1>
           </div>
           
           <div className="flex gap-3">
-            {/* MAGNETIC THEME BUTTON */}
             <button 
               ref={themeMag.ref}
               onMouseMove={themeMag.handleMouseMove}
@@ -161,7 +168,6 @@ export default function App() {
               {isDark ? <Sun size={20}/> : <Moon size={20}/>}
             </button>
 
-            {/* MAGNETIC LOGOUT BUTTON */}
             <button 
               ref={logoutMag.ref}
               onMouseMove={logoutMag.handleMouseMove}
@@ -182,17 +188,17 @@ export default function App() {
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
             <div className={`${colors.card} backdrop-blur-xl rounded-[2.8rem] p-9 border flex justify-between items-center`}>
               <div>
-                <p className="text-5xl font-bold tracking-tighter leading-none">{totalPoints}</p>
-                <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-4">Experience</p>
+                <p className="text-5xl font-bold tracking-tighter leading-none italic">{totalPoints}</p>
+                <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-4">Total Score</p>
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold leading-none">{unlockedSpots.length}</p>
-                <p className={`${colors.muted} text-[10px] font-bold uppercase mt-1`}>Discoveries</p>
+                <p className={`${colors.muted} text-[10px] font-bold uppercase mt-1`}>Claimed</p>
               </div>
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-500/60 px-4">Journey Log</h2>
+              <h2 className="text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-500/60 px-4">Inventory</h2>
               {unlockedSpots.map(id => (
                 <div key={id} className={`${colors.card} p-5 rounded-[2.2rem] flex items-center justify-between border transition-all hover:border-emerald-500/20`}>
                   <div className="flex items-center gap-4">
@@ -201,11 +207,8 @@ export default function App() {
                     </div>
                     <div>
                       <p className="font-bold text-sm tracking-tight">{spots[id]?.name}</p>
-                      <p className="text-[10px] text-emerald-500/80 font-bold uppercase tracking-wider">Confirmed Discovery</p>
+                      <p className="text-[10px] text-emerald-500/80 font-bold uppercase">Rank {spots[id]?.points}</p>
                     </div>
-                  </div>
-                  <div className="text-[10px] font-bold bg-emerald-500/5 px-3 py-1.5 rounded-full text-emerald-500">
-                    +{spots[id]?.points}
                   </div>
                 </div>
               ))}
@@ -214,12 +217,19 @@ export default function App() {
         )}
 
         {activeTab === 'explore' && (
-          <div className={`${colors.card} rounded-[3rem] p-2 shadow-2xl border h-[500px] overflow-hidden`}>
-            <MapContainer key={`${activeTab}-${theme}`} center={mapCenter} zoom={12} attributionControl={false} className="h-full w-full rounded-[2.4rem]">
+          <div className={`${colors.card} rounded-[3rem] p-2 shadow-2xl border h-[500px] overflow-hidden relative`}>
+            {/* CSS to hide Leaflet attribution */}
+            <style>{`.leaflet-control-attribution { display: none !important; }`}</style>
+            <MapContainer key={`${activeTab}-${theme}`} center={mapCenter} zoom={12} attributionControl={false} className="h-full w-full rounded-[2.4rem] z-0">
               <TileLayer url={isDark ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"} />
               {Object.values(spots).map(spot => (
-                <Marker key={spot.id} position={[spot.lat, spot.lng]}>
-                  <Popup><span className="font-bold text-xs">{spot.name}</span></Popup>
+                <Marker key={spot.id} position={[spot.lat, spot.lng]} icon={sleekIcon(isDark)}>
+                  <Popup>
+                    <div className="font-bold text-xs py-1">
+                        <span className="block text-emerald-500 text-[10px] uppercase">Spot</span>
+                        {spot.name}
+                    </div>
+                  </Popup>
                 </Marker>
               ))}
             </MapContainer>
@@ -229,13 +239,13 @@ export default function App() {
         {activeTab === 'profile' && (
            <div className={`${colors.card} p-10 rounded-[2.8rem] border space-y-8`}>
               <div className="space-y-3">
-                <label className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest ml-1">Callsign</label>
+                <label className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest ml-1">Update Identity</label>
                 <input type="text" value={tempUsername} onChange={(e) => setTempUsername(e.target.value)}
                   className={`w-full ${isDark ? 'bg-zinc-950/50 border-white/5' : 'bg-emerald-50/30 border-emerald-100'} border rounded-2xl py-5 px-6 font-bold outline-none focus:border-emerald-500/40 transition-all text-sm`}
                 />
               </div>
               <button onClick={saveUsername} className="w-full bg-emerald-500 text-white py-5 rounded-2xl font-bold shadow-lg shadow-emerald-500/10 hover:bg-emerald-600 active:scale-[0.97] transition-all text-sm">
-                Save Profile
+                Apply Changes
               </button>
            </div>
         )}
@@ -243,7 +253,7 @@ export default function App() {
         {activeTab === 'dev' && isAdmin && (
            <div className={`${colors.card} p-8 rounded-[2.8rem] border space-y-6`}>
               <h2 className="font-bold uppercase flex items-center gap-2 text-[10px] tracking-[0.2em] text-emerald-500">
-                <Terminal size={14}/> Node Management
+                <Terminal size={14}/> Admin Control
               </h2>
               <div className="space-y-2 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
                 {Object.values(spots).map(spot => {
@@ -266,7 +276,6 @@ export default function App() {
         )}
       </div>
 
-      {/* REFINED GLASS NAV BAR */}
       <nav className="fixed bottom-10 left-8 right-8 z-[9999] flex justify-center">
         <div className={`${colors.nav} backdrop-blur-2xl rounded-[2.5rem] p-1.5 flex items-center border shadow-2xl shadow-black/10`}>
           {['home', 'explore', 'profile', 'dev'].map((tab) => (
