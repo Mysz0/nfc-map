@@ -7,9 +7,9 @@ import { supabase } from './supabase';
 
 const ADMIN_UID = import.meta.env.VITE_ADMIN_UID;
 
-// --- UTILS ---
+// --- UTILS: Distance Calculation ---
 const getDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371; // km
+  const R = 6371; // Earth's radius in km
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -64,7 +64,7 @@ export default function App() {
   const themeMag = useMagnetic();
   const logoutMag = useMagnetic();
 
-  // --- THEME FIX: Apply to Document ---
+  // --- THEME FIX: Instant apply to root ---
   useEffect(() => {
     const root = window.document.documentElement;
     if (isDark) {
@@ -96,20 +96,19 @@ export default function App() {
     };
     initApp();
 
-    // Geolocation for proximity alert
     const watchId = navigator.geolocation.watchPosition((pos) => {
       setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-    }, (err) => console.log(err), { enableHighAccuracy: true });
+    }, (err) => console.log("Location Error:", err), { enableHighAccuracy: true });
 
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  // --- CHECK PROXIMITY ---
+  // --- PROXIMITY CHECK (1KM) ---
   useEffect(() => {
     if (userLocation && Object.values(spots).length > 0) {
       const nearby = Object.values(spots).some(spot => {
         const dist = getDistance(userLocation.lat, userLocation.lng, spot.lat, spot.lng);
-        return dist < 0.5; // Within 500 meters
+        return dist < 1.0; // 1km threshold
       });
       setIsNearSpot(nearby);
     }
@@ -186,15 +185,8 @@ export default function App() {
         .mist-overlay {
           background: radial-gradient(circle at top, ${isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)'} 0%, transparent 60%);
         }
-        @keyframes marker-pulse {
-          0% { transform: scale(0.6); opacity: 0.8; }
-          100% { transform: scale(2.2); opacity: 0; }
-        }
-        .marker-container { position: relative; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
-        .pulse-ring { position: absolute; width: 100%; height: 100%; background: rgba(16, 185, 129, 0.4); border-radius: 50%; animation: marker-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1); }
-        .marker-core { position: relative; width: 10px; height: 10px; background: #10b981; border: 2px solid; border-radius: 50%; box-shadow: 0 0 12px rgba(16, 185, 129, 0.8); z-index: 2; }
         
-        /* Collection Hover Border Animation */
+        /* Collection Hover Slower Border Animation */
         .collection-card {
           position: relative;
           background-clip: padding-box;
@@ -211,19 +203,27 @@ export default function App() {
           mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
           -webkit-mask-composite: xor;
           mask-composite: exclude;
-          transition: all 0.5s ease;
+          transition: all 0.8s ease; 
           opacity: 0;
         }
         .collection-card:hover::before {
           opacity: 1;
           background: linear-gradient(45deg, #10b981, #34d399, transparent, #059669);
           background-size: 200% 200%;
-          animation: move-gradient 3s linear infinite;
+          animation: move-gradient 6s linear infinite; 
         }
         @keyframes move-gradient {
           0% { background-position: 0% 50%; }
           100% { background-position: 200% 50%; }
         }
+
+        @keyframes marker-pulse {
+          0% { transform: scale(0.6); opacity: 0.8; }
+          100% { transform: scale(2.2); opacity: 0; }
+        }
+        .marker-container { position: relative; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
+        .pulse-ring { position: absolute; width: 100%; height: 100%; background: rgba(16, 185, 129, 0.4); border-radius: 50%; animation: marker-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1); }
+        .marker-core { position: relative; width: 10px; height: 10px; background: #10b981; border: 2px solid; border-radius: 50%; box-shadow: 0 0 12px rgba(16, 185, 129, 0.8); z-index: 2; }
       `}</style>
 
       <header className="relative pt-16 pb-32 px-10 rounded-b-[4.5rem] border-b border-white/[0.05] overflow-hidden">
@@ -258,13 +258,13 @@ export default function App() {
         
         {activeTab === 'home' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
-            {/* NEW FEATURE: Proximity Alert */}
+            {/* PROXIMITY ALERT BANNER */}
             {isNearSpot && (
-              <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-3xl animate-pulse">
-                <div className="bg-emerald-500 p-2 rounded-xl text-white">
+              <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-3xl animate-in zoom-in-95 duration-500">
+                <div className="bg-emerald-500 p-2 rounded-xl text-white animate-pulse">
                    <Radar size={16} />
                 </div>
-                <p className="text-xs font-bold text-emerald-500 uppercase tracking-wider">Signal Strong: You are close to a point!</p>
+                <p className="text-xs font-bold text-emerald-500 uppercase tracking-wider">Signal Detected: You are within 1km of a point!</p>
               </div>
             )}
 
@@ -298,7 +298,6 @@ export default function App() {
           </div>
         )}
 
-        {/* ... Rest of the tabs (Explore, Profile, Dev) remain the same to ensure no breakage ... */}
         {activeTab === 'explore' && (
           <div className={`${colors.card} rounded-[3rem] p-2 shadow-2xl border h-[520px] overflow-hidden backdrop-blur-md`}>
             <MapContainer 
