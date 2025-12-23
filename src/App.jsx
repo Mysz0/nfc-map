@@ -7,7 +7,7 @@ import { supabase } from './supabase';
 
 const ADMIN_UID = import.meta.env.VITE_ADMIN_UID;
 
-// --- CUSTOM SLEEK MARKER (Pulsing Core) ---
+// --- CUSTOM SLEEK MARKER ---
 const sleekIcon = (isDark) => L.divIcon({
   className: 'custom-marker',
   html: `
@@ -50,7 +50,6 @@ export default function App() {
 
   const isAdmin = user?.id === ADMIN_UID;
   const isDark = theme === 'dark';
-
   const themeMag = useMagnetic();
   const logoutMag = useMagnetic();
 
@@ -105,10 +104,23 @@ export default function App() {
 
   const colors = {
     bg: isDark ? 'bg-[#09090b]' : 'bg-[#f0f4f2]',
-    card: isDark ? 'bg-zinc-900/40 border-white/[0.03] shadow-2xl' : 'bg-white/90 border-emerald-200/50 shadow-md shadow-emerald-900/5',
+    card: isDark ? 'bg-zinc-900/40 border-white/[0.03] shadow-2xl' : 'bg-white/70 border-emerald-200/50 shadow-md shadow-emerald-900/5',
     nav: isDark ? 'bg-zinc-900/80 border-white/[0.05]' : 'bg-white/95 border-emerald-200/60',
     text: isDark ? 'text-zinc-100' : 'text-zinc-900',
+    glass: isDark ? 'bg-white/[0.02] backdrop-blur-xl border-white/[0.05]' : 'bg-white/40 backdrop-blur-xl border-white/20'
   };
+
+  // --- THEME SWITCHER COMPONENT (Global) ---
+  const ThemeToggle = () => (
+    <button 
+      ref={themeMag.ref} onMouseMove={themeMag.handleMouseMove} onMouseLeave={themeMag.reset}
+      style={{ transform: `translate(${themeMag.position.x}px, ${themeMag.position.y}px)` }}
+      onClick={toggleTheme} 
+      className={`fixed top-6 right-6 p-3.5 rounded-2xl border transition-all duration-300 ease-out active:scale-90 z-[10000] ${isDark ? 'bg-zinc-900/80 border-white/10 text-emerald-400' : 'bg-white/80 border-emerald-200 text-emerald-600 shadow-lg backdrop-blur-md'}`}
+    >
+      {isDark ? <Sun size={18}/> : <Moon size={18}/>}
+    </button>
+  );
 
   if (loading) return (
     <div className={`min-h-screen ${colors.bg} flex items-center justify-center`}>
@@ -117,7 +129,8 @@ export default function App() {
   );
 
   if (!user) return (
-    <div className={`min-h-screen flex flex-col items-center justify-center ${colors.bg} p-6`}>
+    <div className={`min-h-screen flex flex-col items-center justify-center ${colors.bg} p-6 relative`}>
+      <ThemeToggle />
       <div className="w-16 h-16 bg-emerald-500 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-emerald-500/20 rotate-3">
         <MapPin size={32} className="text-white" />
       </div>
@@ -131,7 +144,7 @@ export default function App() {
 
   return (
     <div className={`min-h-screen ${colors.bg} ${colors.text} pb-36 transition-colors duration-500 selection:bg-emerald-500/30`}>
-      {/* GLOBAL OVERRIDES */}
+      <ThemeToggle />
       <style>{`
         .leaflet-control-attribution, .leaflet-control-container img[src*="apple"], img[src*="apple-logo"] { display: none !important; }
         .mist-overlay {
@@ -139,12 +152,8 @@ export default function App() {
         }
       `}</style>
 
-      {/* HEADER WITH REINSTATED MIST */}
       <header className="relative pt-16 pb-32 px-10 rounded-b-[4.5rem] border-b border-white/[0.05] overflow-hidden">
-        {/* The Mist Layers */}
         <div className="absolute inset-0 mist-overlay z-0" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[300px] bg-emerald-500/10 blur-[100px] rounded-full z-0 opacity-50" />
-        
         <div className={`absolute inset-0 ${isDark ? 'bg-zinc-950/40' : 'bg-white/10'} backdrop-blur-3xl z-10`} />
         
         <div className="max-w-md mx-auto flex justify-between items-center relative z-20">
@@ -160,19 +169,10 @@ export default function App() {
           
           <div className="flex gap-2.5">
             <button 
-              ref={themeMag.ref} onMouseMove={themeMag.handleMouseMove} onMouseLeave={themeMag.reset}
-              style={{ transform: `translate(${themeMag.position.x}px, ${themeMag.position.y}px)` }}
-              onClick={toggleTheme} 
-              className={`p-3.5 rounded-2xl border transition-all duration-300 ease-out active:scale-90 z-30 ${isDark ? 'bg-white/[0.03] border-white/[0.05] text-emerald-400' : 'bg-white border-emerald-200 text-emerald-600 shadow-sm'}`}
-            >
-              {isDark ? <Sun size={18}/> : <Moon size={18}/>}
-            </button>
-
-            <button 
               ref={logoutMag.ref} onMouseMove={logoutMag.handleMouseMove} onMouseLeave={logoutMag.reset}
               style={{ transform: `translate(${logoutMag.position.x}px, ${logoutMag.position.y}px)` }}
               onClick={handleLogout} 
-              className={`p-3.5 rounded-2xl border transition-all duration-300 ease-out active:scale-90 z-30 ${isDark ? 'bg-white/[0.03] border-white/[0.05] text-zinc-500' : 'bg-white border-emerald-100 text-emerald-600 shadow-sm'}`}
+              className={`p-3.5 rounded-2xl border transition-all duration-300 ease-out active:scale-90 z-30 ${isDark ? 'bg-white/[0.03] border-white/[0.05] text-zinc-500' : 'bg-white/80 border-emerald-100 text-emerald-600 shadow-sm'}`}
             >
               <LogOut size={18}/>
             </button>
@@ -199,15 +199,15 @@ export default function App() {
             <div className="space-y-3">
               <h2 className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-500/50 px-4">Collections</h2>
               {unlockedSpots.map(id => (
-                <div key={id} className={`${colors.card} p-5 rounded-[2.2rem] flex items-center justify-between border transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group`}>
+                <div key={id} className={`${colors.card} p-5 rounded-[2.2rem] flex items-center justify-between border transition-all duration-300 hover:scale-[1.02] backdrop-blur-md`}>
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center font-bold group-hover:bg-emerald-500 group-hover:text-white transition-colors">✓</div>
+                    <div className="w-10 h-10 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center font-bold">✓</div>
                     <div>
                       <p className="font-bold text-sm tracking-tight">{spots[id]?.name}</p>
                       <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-widest">Entry Logged</p>
                     </div>
                   </div>
-                  <div className="text-xs font-bold opacity-30 group-hover:opacity-100 transition-opacity">+{spots[id]?.points}</div>
+                  <div className="text-xs font-bold opacity-30">+{spots[id]?.points}</div>
                 </div>
               ))}
             </div>
@@ -215,7 +215,7 @@ export default function App() {
         )}
 
         {activeTab === 'explore' && (
-          <div className={`${colors.card} rounded-[3rem] p-2 shadow-2xl border h-[520px] overflow-hidden`}>
+          <div className={`${colors.card} rounded-[3rem] p-2 shadow-2xl border h-[520px] overflow-hidden backdrop-blur-md`}>
             <MapContainer key={`${activeTab}-${theme}`} center={mapCenter} zoom={12} zoomControl={false} className="h-full w-full rounded-[2.5rem] z-0">
               <TileLayer url={isDark ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"} />
               {Object.values(spots).map(spot => (
@@ -227,12 +227,13 @@ export default function App() {
           </div>
         )}
 
+        {/* --- IDENTITY OVERRIDE (FROSTED) --- */}
         {activeTab === 'profile' && (
-           <div className={`${colors.card} p-10 rounded-[3rem] border space-y-8`}>
+           <div className={`${colors.glass} p-10 rounded-[3rem] border space-y-8 animate-in fade-in zoom-in-95 duration-300`}>
               <div className="space-y-3">
                 <label className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest ml-1">Identity</label>
                 <input type="text" value={tempUsername} onChange={(e) => setTempUsername(e.target.value)}
-                  className={`w-full ${isDark ? 'bg-black/40 border-white/[0.05]' : 'bg-emerald-50/20 border-emerald-100'} border rounded-2xl py-5 px-6 font-bold outline-none focus:border-emerald-500/40 transition-all text-sm`}
+                  className={`w-full ${isDark ? 'bg-black/20 border-white/10' : 'bg-white/40 border-emerald-200/50'} border rounded-2xl py-5 px-6 font-bold outline-none focus:border-emerald-500/40 transition-all text-sm backdrop-blur-md`}
                   placeholder="Your callsign..."
                 />
               </div>
@@ -242,8 +243,9 @@ export default function App() {
            </div>
         )}
 
+        {/* --- NODE OVERRIDE (FROSTED) --- */}
         {activeTab === 'dev' && isAdmin && (
-           <div className={`${colors.card} p-8 rounded-[3rem] border space-y-6`}>
+           <div className={`${colors.glass} p-8 rounded-[3rem] border space-y-6 animate-in fade-in zoom-in-95 duration-300`}>
               <h2 className="font-bold uppercase flex items-center gap-2 text-[10px] tracking-widest text-emerald-500">
                 <Terminal size={14}/> Node Override
               </h2>
@@ -251,7 +253,7 @@ export default function App() {
                 {Object.values(spots).map(spot => {
                   const isClaimed = unlockedSpots.includes(spot.id);
                   return (
-                    <div key={spot.id} className={`${isDark ? 'bg-white/[0.03]' : 'bg-slate-50/50'} p-4 rounded-[1.8rem] flex justify-between items-center border border-transparent hover:border-emerald-500/10 transition-all`}>
+                    <div key={spot.id} className={`${isDark ? 'bg-white/5' : 'bg-white/30'} p-4 rounded-[1.8rem] flex justify-between items-center border border-white/5 hover:border-emerald-500/20 transition-all`}>
                       <span className="text-xs font-bold tracking-tight">{spot.name}</span>
                       <div className="flex gap-2">
                         {isClaimed ? (
