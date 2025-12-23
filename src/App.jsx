@@ -104,13 +104,10 @@ export default function App() {
   const totalPoints = unlockedSpots.reduce((sum, id) => sum + (spots[id]?.points || 0), 0);
 
   const colors = {
-    bg: isDark ? 'bg-[#09090b]' : 'bg-[#f0f4f2]', // Darker white mode for better card contrast
+    bg: isDark ? 'bg-[#09090b]' : 'bg-[#f0f4f2]',
     card: isDark ? 'bg-zinc-900/40 border-white/[0.03] shadow-2xl' : 'bg-white/90 border-emerald-200/50 shadow-md shadow-emerald-900/5',
     nav: isDark ? 'bg-zinc-900/80 border-white/[0.05]' : 'bg-white/95 border-emerald-200/60',
     text: isDark ? 'text-zinc-100' : 'text-zinc-900',
-    header: isDark 
-      ? 'from-emerald-600/10 via-zinc-900/95 to-zinc-950 border-white/[0.05]' 
-      : 'from-emerald-400/20 via-white/80 to-[#f0f4f2] border-emerald-200/40',
   };
 
   if (loading) return (
@@ -137,15 +134,24 @@ export default function App() {
       {/* GLOBAL OVERRIDES */}
       <style>{`
         .leaflet-control-attribution, .leaflet-control-container img[src*="apple"], img[src*="apple-logo"] { display: none !important; }
+        .mist-overlay {
+          background: radial-gradient(circle at top, ${isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)'} 0%, transparent 60%);
+        }
       `}</style>
 
-      {/* REFINED HEADER */}
-      <header className={`relative pt-16 pb-32 px-10 rounded-b-[4rem] border-b ${colors.header} overflow-hidden backdrop-blur-3xl`}>
-        <div className="max-w-md mx-auto flex justify-between items-center relative z-10">
+      {/* HEADER WITH REINSTATED MIST */}
+      <header className="relative pt-16 pb-32 px-10 rounded-b-[4.5rem] border-b border-white/[0.05] overflow-hidden">
+        {/* The Mist Layers */}
+        <div className="absolute inset-0 mist-overlay z-0" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[300px] bg-emerald-500/10 blur-[100px] rounded-full z-0 opacity-50" />
+        
+        <div className={`absolute inset-0 ${isDark ? 'bg-zinc-950/40' : 'bg-white/10'} backdrop-blur-3xl z-10`} />
+        
+        <div className="max-w-md mx-auto flex justify-between items-center relative z-20">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
-               {isAdmin && <span className="text-[7px] font-black tracking-[0.2em] text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">ADMIN ACCESS</span>}
-               {!isAdmin && <span className="text-[7px] font-black tracking-[0.2em] text-zinc-400 uppercase">Explorer Mode</span>}
+               {isAdmin && <span className="text-[7px] font-black tracking-[0.2em] text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">ADMIN ACCESS</span>}
+               {!isAdmin && <span className="text-[7px] font-black tracking-[0.2em] text-zinc-500 uppercase">Explorer Mode</span>}
             </div>
             <h1 className="text-3xl font-bold tracking-tighter italic uppercase">
               {username || 'Hunter'}<span className="text-emerald-500 font-normal">.</span>
@@ -157,7 +163,7 @@ export default function App() {
               ref={themeMag.ref} onMouseMove={themeMag.handleMouseMove} onMouseLeave={themeMag.reset}
               style={{ transform: `translate(${themeMag.position.x}px, ${themeMag.position.y}px)` }}
               onClick={toggleTheme} 
-              className={`p-3.5 rounded-2xl border transition-all duration-300 ease-out active:scale-90 ${isDark ? 'bg-white/[0.03] border-white/[0.05] text-emerald-400' : 'bg-white border-emerald-200 text-emerald-600 shadow-sm'}`}
+              className={`p-3.5 rounded-2xl border transition-all duration-300 ease-out active:scale-90 z-30 ${isDark ? 'bg-white/[0.03] border-white/[0.05] text-emerald-400' : 'bg-white border-emerald-200 text-emerald-600 shadow-sm'}`}
             >
               {isDark ? <Sun size={18}/> : <Moon size={18}/>}
             </button>
@@ -166,7 +172,7 @@ export default function App() {
               ref={logoutMag.ref} onMouseMove={logoutMag.handleMouseMove} onMouseLeave={logoutMag.reset}
               style={{ transform: `translate(${logoutMag.position.x}px, ${logoutMag.position.y}px)` }}
               onClick={handleLogout} 
-              className={`p-3.5 rounded-2xl border transition-all duration-300 ease-out active:scale-90 ${isDark ? 'bg-white/[0.03] border-white/[0.05] text-zinc-500' : 'bg-white border-emerald-200 text-emerald-600 shadow-sm'}`}
+              className={`p-3.5 rounded-2xl border transition-all duration-300 ease-out active:scale-90 z-30 ${isDark ? 'bg-white/[0.03] border-white/[0.05] text-zinc-500' : 'bg-white border-emerald-100 text-emerald-600 shadow-sm'}`}
             >
               <LogOut size={18}/>
             </button>
@@ -174,7 +180,7 @@ export default function App() {
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-6 -mt-16 relative z-20">
+      <div className="max-w-md mx-auto px-6 -mt-16 relative z-30">
         
         {activeTab === 'home' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
@@ -186,7 +192,7 @@ export default function App() {
               <div className="h-12 w-px bg-emerald-500/10" />
               <div className="text-right">
                 <p className="text-3xl font-bold leading-none">{unlockedSpots.length}</p>
-                <p className="text-zinc-400 text-[10px] font-bold uppercase mt-1">Found</p>
+                <p className="text-zinc-500 text-[10px] font-bold uppercase mt-1">Found</p>
               </div>
             </div>
 
@@ -198,7 +204,7 @@ export default function App() {
                     <div className="w-10 h-10 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center font-bold group-hover:bg-emerald-500 group-hover:text-white transition-colors">✓</div>
                     <div>
                       <p className="font-bold text-sm tracking-tight">{spots[id]?.name}</p>
-                      <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-widest">Confirmed</p>
+                      <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-widest">Entry Logged</p>
                     </div>
                   </div>
                   <div className="text-xs font-bold opacity-30 group-hover:opacity-100 transition-opacity">+{spots[id]?.points}</div>
