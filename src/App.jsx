@@ -67,6 +67,7 @@ export default function App() {
   const themeMag = useMagnetic();
   const logoutMag = useMagnetic();
 
+  // --- THEME FIX: Instant apply to root ---
   useEffect(() => {
     const root = window.document.documentElement;
     if (isDark) {
@@ -83,7 +84,6 @@ export default function App() {
       if (dbSpots) {
         const spotsObj = dbSpots.reduce((acc, s) => ({ ...acc, [s.id]: s }), {});
         setSpots(spotsObj);
-        // Fetch leaderboard after spots are loaded to calculate scores
         fetchLeaderboard(spotsObj);
       }
       const { data: { session } } = await supabase.auth.getSession();
@@ -107,7 +107,7 @@ export default function App() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  // --- NEW: FETCH LEADERBOARD LOGIC ---
+  // --- LEADERBOARD FETCH ---
   const fetchLeaderboard = async (currentSpots) => {
     const { data: profiles } = await supabase.from('profiles').select('username, unlocked_spots');
     if (profiles) {
@@ -120,11 +120,12 @@ export default function App() {
     }
   };
 
+  // --- PROXIMITY CHECK (1KM) ---
   useEffect(() => {
     if (userLocation && Object.values(spots).length > 0) {
       const nearby = Object.values(spots).some(spot => {
         const dist = getDistance(userLocation.lat, userLocation.lng, spot.lat, spot.lng);
-        return dist < 0.25; 
+        return dist < 0.25; // 250m threshold
       });
       setIsNearSpot(nearby);
     }
@@ -137,8 +138,8 @@ export default function App() {
     const newUnlocked = [...unlockedSpots, spotId];
     const { error } = await supabase.from('profiles').update({ unlocked_spots: newUnlocked }).eq('id', user.id);
     if (!error) {
-        setUnlockedSpots(newUnlocked);
-        fetchLeaderboard(spots); // Refresh rank
+      setUnlockedSpots(newUnlocked);
+      fetchLeaderboard(spots);
     }
   };
 
@@ -146,8 +147,8 @@ export default function App() {
     const newUnlocked = unlockedSpots.filter(id => id !== spotId);
     const { error } = await supabase.from('profiles').update({ unlocked_spots: newUnlocked }).eq('id', user.id);
     if (!error) {
-        setUnlockedSpots(newUnlocked);
-        fetchLeaderboard(spots); // Refresh rank
+      setUnlockedSpots(newUnlocked);
+      fetchLeaderboard(spots);
     }
   };
 
@@ -155,9 +156,9 @@ export default function App() {
     const cleaned = tempUsername.replace('@', '').trim();
     const { error } = await supabase.from('profiles').upsert({ id: user.id, username: cleaned });
     if (!error) { 
-        setUsername(cleaned); 
-        alert("Profile secured."); 
-        fetchLeaderboard(spots);
+      setUsername(cleaned); 
+      alert("Profile secured."); 
+      fetchLeaderboard(spots);
     }
   };
 
@@ -211,6 +212,8 @@ export default function App() {
         .mist-overlay {
           background: radial-gradient(circle at top, ${isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)'} 0%, transparent 60%);
         }
+        .leaflet-container { background: ${isDark ? '#09090b' : '#f0f4f2'} !important; }
+        
         .collection-card {
           position: relative;
           background-clip: padding-box;
@@ -240,6 +243,7 @@ export default function App() {
           0% { background-position: 0% 50%; }
           100% { background-position: 200% 50%; }
         }
+
         @keyframes marker-pulse {
           0% { transform: scale(0.6); opacity: 0.8; }
           100% { transform: scale(2.2); opacity: 0; }
@@ -320,27 +324,26 @@ export default function App() {
           </div>
         )}
 
-        {/* --- NEW LEADERBOARD TAB --- */}
         {activeTab === 'leaderboard' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
-             <div className="space-y-3">
-              <h2 className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-500 px-4">Global Rankings</h2>
+            <div className="space-y-3">
+              <h2 className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-500/50 px-4">Global Rankings</h2>
               {leaderboard.map((entry, index) => (
-                <div key={index} className={`${colors.card} p-5 rounded-[2.2rem] flex items-center justify-between border backdrop-blur-md transition-all`}>
+                <div key={index} className={`collection-card ${colors.card} p-5 rounded-[2.2rem] flex items-center justify-between border transition-all duration-300 hover:scale-[1.02] backdrop-blur-md`}>
                   <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 ${index === 0 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-emerald-500/10 text-emerald-500'} rounded-2xl flex items-center justify-center font-black text-xs`}>
+                    <div className={`w-10 h-10 ${index === 0 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-emerald-500/10 text-emerald-500'} rounded-2xl flex items-center justify-center font-black text-xs relative z-10`}>
                       {index + 1}
                     </div>
                     <div>
                       <p className={`font-bold text-sm tracking-tight ${entry.username === username ? 'text-emerald-500' : ''}`}>
-                        @{entry.username} {entry.username === username && '(You)'}
+                        @{entry.username} {entry.username === username && <span className="text-[8px] opacity-60 ml-1">(YOU)</span>}
                       </p>
-                      <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">{entry.found} Spots Secured</p>
+                      <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-widest">{entry.found} Nodes Secured</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-black tracking-tight">{entry.score}</p>
-                    <p className="text-[8px] font-bold text-emerald-500/50 uppercase">XP</p>
+                  <div className="text-right pr-2">
+                    <p className="text-sm font-black tracking-tighter leading-none">{entry.score}</p>
+                    <p className="text-[8px] font-bold opacity-30 uppercase tracking-tighter">Total XP</p>
                   </div>
                 </div>
               ))}
