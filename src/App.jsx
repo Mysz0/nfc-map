@@ -1,13 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Trophy, User, Home, Compass, LogOut, Save, Navigation } from 'lucide-react';
+import { MapPin, Trophy, User, Home, Compass, LogOut, Save } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { supabase } from './supabase'; 
 
+// Fix for Leaflet default icon disappearing in production build
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
+
 const SPOTS = {
-  'spot-001': { id: 'spot-001', name: 'Central Park Fountain', lat: 40.7829, lng: -73.9654, radius: 100, points: 50 },
-  'spot-002': { id: 'spot-002', name: 'Brooklyn Bridge', lat: 40.7061, lng: -73.9969, radius: 100, points: 75 },
-  'spot-003': { id: 'spot-003', name: 'Times Square', lat: 40.7580, lng: -73.9855, radius: 100, points: 100 },
-  'spot-004': { id: 'spot-004', name: 'Empire State Building', lat: 40.7484, lng: -73.9857, radius: 100, points: 150 },
-  'spot-005': { id: 'spot-005', name: 'Statue of Liberty', lat: 40.6892, lng: -74.0445, radius: 100, points: 200 },
+  'spot-001': { id: 'spot-001', name: 'Central Park Fountain', lat: 40.7829, lng: -73.9654, points: 50 },
+  'spot-002': { id: 'spot-002', name: 'Brooklyn Bridge', lat: 40.7061, lng: -73.9969, points: 75 },
+  'spot-003': { id: 'spot-003', name: 'Times Square', lat: 40.7580, lng: -73.9855, points: 100 },
+  'spot-004': { id: 'spot-004', name: 'Empire State Building', lat: 40.7484, lng: -73.9857, points: 150 },
+  'spot-005': { id: 'spot-005', name: 'Statue of Liberty', lat: 40.6892, lng: -74.0445, points: 200 },
 };
 
 export default function App() {
@@ -18,106 +32,99 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [mapCenter] = useState([40.730610, -73.935242]); // NYC Center
 
   useEffect(() => {
     const initApp = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUser(session.user);
-        fetchProfile(session.user.id);
+        const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+        if (data) {
+          setUnlockedSpots(data.unlocked_spots || []);
+          setUsername(data.username || '');
+          setTempUsername(data.username || '');
+        }
       }
       setLoading(false);
     };
-
-    const fetchProfile = async (userId) => {
-      const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
-      if (data) {
-        setUnlockedSpots(data.unlocked_spots || []);
-        setUsername(data.username || '');
-        setTempUsername(data.username || '');
-      }
-    };
-
     initApp();
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
-    });
-
-    return () => authListener.subscription.unsubscribe();
   }, []);
 
   const saveUsername = async () => {
     setIsSaving(true);
-    const cleanedUsername = tempUsername.replace('@', '').trim();
-    const { error } = await supabase.from('profiles').upsert({ id: user.id, username: cleanedUsername });
-    if (!error) { setUsername(cleanedUsername); alert("Profile Updated!"); }
+    const cleaned = tempUsername.replace('@', '').trim();
+    const { error } = await supabase.from('profiles').upsert({ id: user.id, username: cleaned });
+    if (!error) {
+      setUsername(cleaned);
+      alert("Hunter ID Updated!");
+    } else {
+      alert("Error saving username.");
+    }
     setIsSaving(false);
-  };
-
-  const openInMaps = (lat, lng) => {
-    const url = `http://maps.apple.com/?daddr=${lat},${lng}`;
-    window.open(url, '_blank');
   };
 
   const totalPoints = unlockedSpots.reduce((sum, id) => sum + (SPOTS[id]?.points || 0), 0);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-900 text-emerald-500 font-black">LOADING...</div>;
+  if (loading) return <div className="min-h-screen bg-slate-900 flex items-center justify-center font-black text-emerald-500 italic">SYNCING...</div>;
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-6 text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-6">
         <div className="w-20 h-20 bg-emerald-500 rounded-3xl flex items-center justify-center mb-6 shadow-2xl rotate-3"><MapPin size={40} /></div>
-        <h1 className="text-5xl font-black mb-6 italic">SPOT<span className="text-emerald-500">HUNT</span></h1>
-        <button onClick={() => supabase.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: window.location.origin } })}
-          className="bg-white text-black px-10 py-4 rounded-2xl font-black shadow-xl">LOGIN WITH GITHUB</button>
+        <h1 className="text-5xl font-black mb-8 italic tracking-tighter uppercase">SPOT<span className="text-emerald-500">HUNT</span></h1>
+        <button onClick={() => supabase.auth.signInWithOAuth({ provider: 'github' })} 
+          className="bg-white text-black px-12 py-4 rounded-2xl font-black shadow-xl hover:bg-emerald-500 hover:text-white transition-all">LOGIN WITH GITHUB</button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-32">
-      {/* FIXED HEADER - Increased padding to prevent overlap */}
-      <div className="bg-slate-900 text-white p-8 pt-16 pb-20 rounded-b-[48px] shadow-2xl">
+    <div className="min-h-screen bg-slate-50 pb-32 font-sans selection:bg-emerald-500">
+      {/* HEADER - Solid Padding Fix */}
+      <div className="bg-slate-900 text-white p-8 pt-16 pb-24 rounded-b-[48px] shadow-2xl border-b-4 border-emerald-500/20">
         <div className="max-w-md mx-auto flex justify-between items-start">
           <div>
-            <h1 className="text-2xl font-black tracking-tight uppercase text-emerald-500">
-              {username ? `@${username}` : 'New Hunter'}
+            <h1 className="text-2xl font-black text-emerald-500 uppercase tracking-tight">
+              {username ? `@${username}` : 'UNNAMED HUNTER'}
             </h1>
-            <p className="text-slate-400 text-xs font-mono opacity-80 mt-1">{user.email}</p>
+            <p className="text-slate-500 text-xs font-mono font-bold">{user.email}</p>
           </div>
-          <button onClick={() => supabase.auth.signOut()} className="p-3 bg-slate-800 rounded-2xl text-slate-400"><LogOut size={20}/></button>
+          <button onClick={() => supabase.auth.signOut()} className="p-3 bg-slate-800 rounded-2xl text-slate-400 hover:text-red-400 transition-colors">
+            <LogOut size={20}/>
+          </button>
         </div>
       </div>
 
-      <div className="max-w-md mx-auto px-6 -mt-12">
+      <div className="max-w-md mx-auto px-6 -mt-14 relative z-20">
         {activeTab === 'home' && (
           <div className="space-y-8">
-            {/* STATS CARD - Added clear internal padding */}
+            {/* STATS CARD */}
             <div className="bg-white rounded-[32px] p-8 shadow-xl border border-slate-100 flex justify-between items-center">
               <div>
                 <p className="text-5xl font-black text-slate-900 leading-none">{totalPoints}</p>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Points</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Score</p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-black text-slate-900 leading-none">{unlockedSpots.length}</p>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Found</p>
+                <p className="text-2xl font-black text-slate-900 leading-none">{unlockedSpots.length}/5</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Claimed</p>
               </div>
             </div>
 
-            <h2 className="text-lg font-black text-slate-900 uppercase">Recent Activity</h2>
-            <div className="space-y-3">
+            <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+              <Trophy size={20} className="text-emerald-500"/> Collected Spot
+            </h2>
+            <div className="space-y-3 pb-4">
               {unlockedSpots.length === 0 ? (
-                <div className="bg-slate-100 rounded-3xl p-10 text-center border-2 border-dashed border-slate-200">
-                  <p className="text-slate-400 font-bold text-xs uppercase">No spots claimed yet</p>
+                <div className="bg-slate-100 rounded-[32px] p-10 text-center border-2 border-dashed border-slate-200">
+                  <p className="text-slate-400 font-bold text-xs uppercase italic">Go find some tags, rookie.</p>
                 </div>
               ) : (
-                [...unlockedSpots].reverse().map(id => (
-                  <div key={id} className="bg-white p-5 rounded-3xl flex items-center gap-4 border border-slate-100 shadow-sm">
-                    <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center"><Trophy size={20}/></div>
-                    <div>
-                      <p className="font-black text-slate-800 text-sm uppercase">{SPOTS[id].name}</p>
-                      <p className="text-xs font-bold text-emerald-500">+{SPOTS[id].points} PTS</p>
+                unlockedSpots.map(id => (
+                  <div key={id} className="bg-white p-5 rounded-3xl flex items-center justify-between border border-slate-100 shadow-sm">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-emerald-500 text-white rounded-xl flex items-center justify-center font-black">✓</div>
+                      <p className="font-black text-slate-800 text-sm uppercase tracking-tight">{SPOTS[id].name}</p>
                     </div>
                   </div>
                 ))
@@ -127,62 +134,62 @@ export default function App() {
         )}
 
         {activeTab === 'explore' && (
-          <div className="space-y-4 pt-4">
-            <h2 className="text-xl font-black text-slate-900 uppercase">Available Spots</h2>
-            {Object.values(SPOTS).map(spot => {
-              const found = unlockedSpots.includes(spot.id);
-              return (
-                <div key={spot.id} className={`p-6 rounded-[32px] border-2 transition-all ${found ? 'bg-emerald-50 border-emerald-200 opacity-60' : 'bg-white border-white shadow-md'}`}>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${found ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                        {found ? <Trophy size={20}/> : <Compass size={20}/>}
+          <div className="space-y-6">
+            <div className="bg-white rounded-[40px] p-2 shadow-2xl border border-slate-100 h-[450px] relative overflow-hidden">
+              <MapContainer center={mapCenter} zoom={12} scrollWheelZoom={true} style={{ height: '100%', width: '100%', borderRadius: '32px' }}>
+                <TileLayer
+                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                  attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+                />
+                {Object.values(SPOTS).map(spot => (
+                  <Marker key={spot.id} position={[spot.lat, spot.lng]}>
+                    <Popup className="custom-popup">
+                      <div className="p-1">
+                        <p className="font-black text-slate-900 uppercase text-xs mb-1">{spot.name}</p>
+                        <p className="font-bold text-emerald-500 text-[10px] uppercase">
+                          {unlockedSpots.includes(spot.id) ? 'ALREADY CLAIMED' : `${spot.points} POINTS AVAILABLE`}
+                        </p>
                       </div>
-                      <div>
-                        <p className="font-black text-slate-900 uppercase text-sm">{spot.name}</p>
-                        <p className="text-xs font-bold text-slate-400">{spot.points} POINTS</p>
-                      </div>
-                    </div>
-                    {!found && (
-                      <button 
-                        onClick={() => openInMaps(spot.lat, spot.lng)}
-                        className="bg-slate-900 text-white p-3 rounded-2xl active:scale-90 transition-transform"
-                      >
-                        <Navigation size={20}/>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                    </Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
+            </div>
+            <div className="bg-slate-900 p-6 rounded-3xl text-white border-l-4 border-emerald-500">
+              <p className="font-black uppercase italic tracking-tighter">Satellite Feed Active</p>
+              <p className="text-xs text-slate-400 mt-1">Markers represent verified NFC tag locations.</p>
+            </div>
           </div>
         )}
 
         {activeTab === 'profile' && (
-          <div className="space-y-6 pt-4">
-            <div className="bg-white p-8 rounded-[32px] shadow-lg border border-slate-100">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block">Edit Username</label>
+          <div className="bg-white p-8 rounded-[40px] shadow-xl border border-slate-100 space-y-6">
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4">Set Hunter Handle</label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400 text-lg">@</span>
-                <input type="text" value={tempUsername} onChange={(e) => setTempUsername(e.target.value)}
-                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 pl-10 pr-4 font-black text-slate-800 focus:border-emerald-500 focus:outline-none"/>
+                <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-emerald-500 text-lg">@</span>
+                <input 
+                  type="text" 
+                  value={tempUsername} 
+                  onChange={(e) => setTempUsername(e.target.value)}
+                  placeholder="USERNAME"
+                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 pl-12 font-black text-slate-800 outline-none focus:border-emerald-500 transition-all placeholder:text-slate-300"
+                />
               </div>
-              <button onClick={saveUsername} disabled={isSaving}
-                className="w-full mt-4 bg-slate-900 text-white py-4 rounded-2xl font-black flex items-center justify-center gap-2">
-                <Save size={18}/> SAVE CHANGES
-              </button>
             </div>
+            <button onClick={saveUsername} disabled={isSaving} 
+              className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+              <Save size={18}/> {isSaving ? 'UPLOADING...' : 'SAVE PROFILE'}
+            </button>
           </div>
         )}
       </div>
 
-      {/* NAV BAR */}
-      <nav className="fixed bottom-8 left-6 right-6 bg-slate-900 rounded-[32px] p-2 shadow-2xl z-50">
-        <div className="flex justify-around items-center">
-          <button onClick={() => setActiveTab('home')} className={`p-4 rounded-2xl ${activeTab === 'home' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}><Home size={24}/></button>
-          <button onClick={() => setActiveTab('explore')} className={`p-4 rounded-2xl ${activeTab === 'explore' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}><Compass size={24}/></button>
-          <button onClick={() => setActiveTab('profile')} className={`p-4 rounded-2xl ${activeTab === 'profile' ? 'bg-emerald-500 text-white' : 'text-slate-500'}`}><User size={24}/></button>
-        </div>
+      {/* NAV BAR - Highest Z-index */}
+      <nav className="fixed bottom-8 left-6 right-6 bg-slate-900/95 backdrop-blur-lg rounded-[32px] p-2 shadow-2xl z-[9999] flex justify-around items-center border border-white/10">
+        <button onClick={() => setActiveTab('home')} className={`p-4 rounded-2xl transition-all ${activeTab === 'home' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40' : 'text-slate-500'}`}><Home size={24}/></button>
+        <button onClick={() => setActiveTab('explore')} className={`p-4 rounded-2xl transition-all ${activeTab === 'explore' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40' : 'text-slate-500'}`}><Compass size={24}/></button>
+        <button onClick={() => setActiveTab('profile')} className={`p-4 rounded-2xl transition-all ${activeTab === 'profile' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40' : 'text-slate-500'}`}><User size={24}/></button>
       </nav>
     </div>
   );
