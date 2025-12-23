@@ -58,13 +58,15 @@ export default function App() {
   const [userLocation, setUserLocation] = useState(null);
   const [isNearSpot, setIsNearSpot] = useState(false);
   const [mapCenter] = useState([40.730610, -73.935242]);
+  
+  // --- NEW LEADERBOARD STATE ---
+  const [leaderboard, setLeaderboard] = useState([]);
 
   const isAdmin = user?.id === ADMIN_UID;
   const isDark = theme === 'dark';
   const themeMag = useMagnetic();
   const logoutMag = useMagnetic();
 
-  // --- THEME FIX: Instant apply to root ---
   useEffect(() => {
     const root = window.document.documentElement;
     if (isDark) {
@@ -81,6 +83,8 @@ export default function App() {
       if (dbSpots) {
         const spotsObj = dbSpots.reduce((acc, s) => ({ ...acc, [s.id]: s }), {});
         setSpots(spotsObj);
+        // Fetch leaderboard after spots are loaded to calculate scores
+        fetchLeaderboard(spotsObj);
       }
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -103,12 +107,24 @@ export default function App() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  // --- PROXIMITY CHECK (1KM) ---
+  // --- NEW: FETCH LEADERBOARD LOGIC ---
+  const fetchLeaderboard = async (currentSpots) => {
+    const { data: profiles } = await supabase.from('profiles').select('username, unlocked_spots');
+    if (profiles) {
+      const ranked = profiles.map(p => ({
+        username: p.username || 'Anonymous',
+        score: (p.unlocked_spots || []).reduce((sum, id) => sum + (currentSpots[id]?.points || 0), 0),
+        found: (p.unlocked_spots || []).length
+      })).sort((a, b) => b.score - a.score);
+      setLeaderboard(ranked);
+    }
+  };
+
   useEffect(() => {
     if (userLocation && Object.values(spots).length > 0) {
       const nearby = Object.values(spots).some(spot => {
         const dist = getDistance(userLocation.lat, userLocation.lng, spot.lat, spot.lng);
-        return dist < 0.25; // 250m threshold
+        return dist < 0.25; 
       });
       setIsNearSpot(nearby);
     }
@@ -120,19 +136,29 @@ export default function App() {
   const claimSpot = async (spotId) => {
     const newUnlocked = [...unlockedSpots, spotId];
     const { error } = await supabase.from('profiles').update({ unlocked_spots: newUnlocked }).eq('id', user.id);
-    if (!error) setUnlockedSpots(newUnlocked);
+    if (!error) {
+        setUnlockedSpots(newUnlocked);
+        fetchLeaderboard(spots); // Refresh rank
+    }
   };
 
   const removeSpot = async (spotId) => {
     const newUnlocked = unlockedSpots.filter(id => id !== spotId);
     const { error } = await supabase.from('profiles').update({ unlocked_spots: newUnlocked }).eq('id', user.id);
-    if (!error) setUnlockedSpots(newUnlocked);
+    if (!error) {
+        setUnlockedSpots(newUnlocked);
+        fetchLeaderboard(spots); // Refresh rank
+    }
   };
 
   const saveUsername = async () => {
     const cleaned = tempUsername.replace('@', '').trim();
     const { error } = await supabase.from('profiles').upsert({ id: user.id, username: cleaned });
-    if (!error) { setUsername(cleaned); alert("Profile secured."); }
+    if (!error) { 
+        setUsername(cleaned); 
+        alert("Profile secured."); 
+        fetchLeaderboard(spots);
+    }
   };
 
   const totalPoints = unlockedSpots.reduce((sum, id) => sum + (spots[id]?.points || 0), 0);
@@ -185,8 +211,6 @@ export default function App() {
         .mist-overlay {
           background: radial-gradient(circle at top, ${isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)'} 0%, transparent 60%);
         }
-        
-        /* Collection Hover Slower Border Animation */
         .collection-card {
           position: relative;
           background-clip: padding-box;
@@ -216,7 +240,6 @@ export default function App() {
           0% { background-position: 0% 50%; }
           100% { background-position: 200% 50%; }
         }
-
         @keyframes marker-pulse {
           0% { transform: scale(0.6); opacity: 0.8; }
           100% { transform: scale(2.2); opacity: 0; }
@@ -258,7 +281,6 @@ export default function App() {
         
         {activeTab === 'home' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
-            {/* PROXIMITY ALERT BANNER */}
             {isNearSpot && (
               <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-3xl animate-in zoom-in-95 duration-500">
                 <div className="bg-emerald-500 p-2 rounded-xl text-white animate-pulse">
@@ -298,6 +320,34 @@ export default function App() {
           </div>
         )}
 
+        {/* --- NEW LEADERBOARD TAB --- */}
+        {activeTab === 'leaderboard' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
+             <div className="space-y-3">
+              <h2 className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-500 px-4">Global Rankings</h2>
+              {leaderboard.map((entry, index) => (
+                <div key={index} className={`${colors.card} p-5 rounded-[2.2rem] flex items-center justify-between border backdrop-blur-md transition-all`}>
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 ${index === 0 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-emerald-500/10 text-emerald-500'} rounded-2xl flex items-center justify-center font-black text-xs`}>
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className={`font-bold text-sm tracking-tight ${entry.username === username ? 'text-emerald-500' : ''}`}>
+                        @{entry.username} {entry.username === username && '(You)'}
+                      </p>
+                      <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">{entry.found} Spots Secured</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-black tracking-tight">{entry.score}</p>
+                    <p className="text-[8px] font-bold text-emerald-500/50 uppercase">XP</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {activeTab === 'explore' && (
           <div className={`${colors.card} rounded-[3rem] p-2 shadow-2xl border h-[520px] overflow-hidden backdrop-blur-md`}>
             <MapContainer 
@@ -322,25 +372,25 @@ export default function App() {
 
         {activeTab === 'profile' && (
            <div className={`${colors.glass} p-10 rounded-[3rem] border space-y-8 animate-in fade-in zoom-in-95 duration-300`}>
-              <div className="space-y-3">
+             <div className="space-y-3">
                 <label className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest ml-1">Identity</label>
                 <input type="text" value={tempUsername} onChange={(e) => setTempUsername(e.target.value)}
                   className={`w-full ${isDark ? 'bg-black/20 border-white/10' : 'bg-white/40 border-emerald-200/50'} border rounded-2xl py-5 px-6 font-bold outline-none focus:border-emerald-500/40 transition-all text-sm backdrop-blur-md`}
                   placeholder="Your callsign..."
                 />
-              </div>
-              <button onClick={saveUsername} className="w-full bg-emerald-500 text-white py-5 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 active:scale-95 transition-all text-sm">
+             </div>
+             <button onClick={saveUsername} className="w-full bg-emerald-500 text-white py-5 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 active:scale-95 transition-all text-sm">
                 Apply Changes
-              </button>
+             </button>
            </div>
         )}
 
         {activeTab === 'dev' && isAdmin && (
            <div className={`${colors.glass} p-8 rounded-[3rem] border space-y-6 animate-in fade-in zoom-in-95 duration-300`}>
-              <h2 className="font-bold uppercase flex items-center gap-2 text-[10px] tracking-widest text-emerald-500">
+             <h2 className="font-bold uppercase flex items-center gap-2 text-[10px] tracking-widest text-emerald-500">
                 <Terminal size={14}/> Node Override
-              </h2>
-              <div className="space-y-2 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+             </h2>
+             <div className="space-y-2 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
                 {Object.values(spots).map(spot => {
                   const isClaimed = unlockedSpots.includes(spot.id);
                   return (
@@ -356,21 +406,22 @@ export default function App() {
                     </div>
                   );
                 })}
-              </div>
+             </div>
            </div>
         )}
       </div>
 
       <nav className="fixed bottom-10 left-8 right-8 z-[9999] flex justify-center">
         <div className={`${colors.nav} backdrop-blur-3xl rounded-[2.5rem] p-1.5 flex items-center border shadow-2xl shadow-black/10`}>
-          {['home', 'explore', 'profile', 'dev'].map((tab) => (
+          {['home', 'explore', 'leaderboard', 'profile', 'dev'].map((tab) => (
             (tab !== 'dev' || isAdmin) && (
               <button key={tab} onClick={() => setActiveTab(tab)} 
-                className={`p-4 px-7 rounded-[2rem] transition-all duration-500 relative ${activeTab === tab ? 'bg-emerald-500/10 text-emerald-500 scale-110' : 'text-zinc-500 hover:text-emerald-500/40'}`}>
-                {tab === 'home' && <Home size={22} strokeWidth={activeTab === tab ? 2.5 : 2}/>}
-                {tab === 'explore' && <Compass size={22} strokeWidth={activeTab === tab ? 2.5 : 2}/>}
-                {tab === 'profile' && <User size={22} strokeWidth={activeTab === tab ? 2.5 : 2}/>}
-                {tab === 'dev' && <Terminal size={22} strokeWidth={activeTab === tab ? 2.5 : 2}/>}
+                className={`p-4 px-6 rounded-[2rem] transition-all duration-500 relative ${activeTab === tab ? 'bg-emerald-500/10 text-emerald-500 scale-110' : 'text-zinc-500 hover:text-emerald-500/40'}`}>
+                {tab === 'home' && <Home size={20} strokeWidth={activeTab === tab ? 2.5 : 2}/>}
+                {tab === 'explore' && <Compass size={20} strokeWidth={activeTab === tab ? 2.5 : 2}/>}
+                {tab === 'leaderboard' && <Trophy size={20} strokeWidth={activeTab === tab ? 2.5 : 2}/>}
+                {tab === 'profile' && <User size={20} strokeWidth={activeTab === tab ? 2.5 : 2}/>}
+                {tab === 'dev' && <Terminal size={20} strokeWidth={activeTab === tab ? 2.5 : 2}/>}
               </button>
             )
           ))}
