@@ -19,7 +19,6 @@ import AdminTab from './components/Tabs/AdminTab';
 const ADMIN_UID = import.meta.env.VITE_ADMIN_UID;
 
 export default function App() {
-  // --- STATE ---
   const [spots, setSpots] = useState({});
   const [unlockedSpots, setUnlockedSpots] = useState([]);
   const [visitData, setVisitData] = useState({}); 
@@ -58,7 +57,7 @@ export default function App() {
     setTimeout(() => setStatusMsg({ text: '', type: '' }), 4000);
   };
 
-  // --- ADMIN ACTIONS ---
+  // --- ADMIN ACTIONS - Preserved ---
   const resetMyTimer = async () => {
     const { error } = await supabase.from('profiles').update({ last_username_change: null }).eq('id', user.id);
     if (!error) { setLastChange(null); showToast("Cooldown nuked."); }
@@ -99,6 +98,7 @@ export default function App() {
     const spot = spots[spotId];
     if (!spot) return;
 
+    // Use visitData with a default object fallback
     const currentData = visitData?.[spotId] || { streak: 0, lastVisit: null, totalEarned: 0 };
 
     if (currentData.lastVisit === today) {
@@ -138,8 +138,8 @@ export default function App() {
   };
 
   const removeSpot = async (spotId) => {
-    const { [spotId]: removed, ...remainingVisitData } = visitData;
-    const newUnlocked = unlockedSpots.filter(id => id !== spotId);
+    const { [spotId]: removed, ...remainingVisitData } = visitData || {};
+    const newUnlocked = (unlockedSpots || []).filter(id => id !== spotId);
     
     const { error } = await supabase.from('profiles').update({ 
       visit_data: remainingVisitData,
@@ -190,7 +190,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (userLocation && Object.values(spots).length > 0) {
+    if (userLocation && spots && Object.values(spots).length > 0) {
       const nearby = Object.values(spots).some(spot => 
         getDistance(userLocation.lat, userLocation.lng, spot.lat, spot.lng) < detectionRadius
       );
@@ -224,6 +224,7 @@ export default function App() {
 
   const handleLogout = async () => { await supabase.auth.signOut(); window.location.href = '/'; };
 
+  // Safe calculation for total points
   const totalPoints = visitData ? Object.values(visitData).reduce((sum, item) => sum + (item?.totalEarned || 0), 0) : 0;
 
   if (loading) return <div className={`min-h-screen ${colors.bg} flex items-center justify-center`}><div className="w-6 h-6 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" /></div>;
