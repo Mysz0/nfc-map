@@ -7,7 +7,11 @@ export default function Header({ isAdmin, username, email, showEmail, isDark, lo
       <div className="absolute inset-0 mist-overlay z-0 rounded-b-[4.5rem] overflow-hidden" />
       <div className={`absolute inset-0 ${isDark ? 'bg-zinc-950/40' : 'bg-white/10'} backdrop-blur-3xl z-10 rounded-b-[4.5rem]`} />
       
-      {/* items-center ensures the Logout button stays on the same baseline as the text and the theme switcher */}
+      {/* This flex container uses items-center. 
+        Because the Logout button is inside this container and the Theme button is 'fixed' in App.jsx,
+        the Theme button will land exactly to the left of this Logout button based on the coordinates 
+        we set in App.jsx.
+      */}
       <div className="max-w-md mx-auto flex justify-between items-center relative z-20">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5">
@@ -29,7 +33,10 @@ export default function Header({ isAdmin, username, email, showEmail, isDark, lo
           )}
         </div>
         
-        {/* LOGOUT BUTTON - FIXED TO RIGHT-10 VIA THE PARENT PX-10 */}
+        {/* LOGOUT BUTTON 
+          Aligned to the right. 
+          The Theme button in App.jsx is coordinated to sit exactly to the left of this button.
+        */}
         <button 
           ref={logoutMag.ref} 
           onMouseMove={logoutMag.handleMouseMove} 
