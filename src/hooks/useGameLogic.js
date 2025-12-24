@@ -42,12 +42,10 @@ export function useGameLogic(user, showToast) {
     if (!user) return;
 
     const fetchData = async () => {
-      // 1. Fetch All Spots (Points data needed for leaderboard calc)
       const { data: dbSpots } = await supabase.from('spots').select('*');
       const spotsObj = dbSpots ? dbSpots.reduce((acc, s) => ({ ...acc, [s.id]: s }), {}) : {};
       setSpots(spotsObj);
 
-      // 2. Fetch or CREATE User Profile (Self-Heal)
       let { data: profile } = await supabase
         .from('profiles')
         .select('*')
@@ -55,7 +53,6 @@ export function useGameLogic(user, showToast) {
         .maybeSingle();
 
       if (!profile) {
-        // Generate a safe fallback name that isn't their email
         const fallbackName = user.user_metadata?.full_name || 
                              user.user_metadata?.user_name || 
                              `Hunter_${user.id.substring(0, 4)}`;
@@ -93,21 +90,40 @@ export function useGameLogic(user, showToast) {
 
   // --- GAMEPLAY ACTIONS ---
   const claimSpot = async (spotId) => {
-    if (unlockedSpots.includes(spotId)) return showToast("Already logged", "error");
-    
     const today = new Date(); today.setHours(0,0,0,0);
-    const lastVisit = visitData.last_visit ? new Date(visitData.last_visit) : null;
-    if (lastVisit) lastVisit.setHours(0,0,0,0);
+    const lastVisitDate = visitData.last_visit ? new Date(visitData.last_visit) : null;
+    if (lastVisitDate) lastVisitDate.setHours(0,0,0,0);
+
+    // 1. BLOCK IF CLAIMED TODAY
+    // We check the last_visit date. If it's today, we don't allow another claim.
+    if (lastVisitDate && today.getTime() === lastVisitDate.getTime() && unlockedSpots.includes(spotId)) {
+      return showToast("Signal already logged for today", "error");
+    }
     
     let newStreak = 1;
-    if (lastVisit) {
-      const diffDays = Math.floor((today - lastVisit) / (1000 * 60 * 60 * 24));
-      if (diffDays === 0) newStreak = visitData.streak;
-      else if (diffDays === 1) newStreak = visitData.streak + 1;
+    if (lastVisitDate) {
+      const diffDays = Math.floor((today - lastVisitDate) / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) {
+        // Same day claim of a NEW spot: maintain current streak
+        newStreak = visitData.streak || 1;
+      } else if (diffDays === 1) {
+        // Consecutive day: Increment streak
+        newStreak = (visitData.streak || 0) + 1;
+      } else {
+        // Streak broken
+        newStreak = 1;
+      }
     }
 
-    const newUnlocked = [...unlockedSpots, spotId];
-    const newVisitData = { last_visit: new Date().toISOString(), streak: newStreak };
+    // 2. UPDATE UNLOCKED SPOTS (Only add if it's the first time ever)
+    const isFirstDiscovery = !unlockedSpots.includes(spotId);
+    const newUnlocked = isFirstDiscovery ? [...unlockedSpots, spotId] : unlockedSpots;
+    
+    const newVisitData = { 
+      last_visit: new Date().toISOString(), 
+      streak: newStreak 
+    };
 
     const { error } = await supabase.from('profiles').update({ 
       unlocked_spots: newUnlocked, 
@@ -118,32 +134,27 @@ export function useGameLogic(user, showToast) {
       setUnlockedSpots(newUnlocked);
       setVisitData(newVisitData);
       fetchLeaderboard(spots);
-      showToast(newStreak > 1 ? `Streak Bonus: ${newStreak} Days!` : "Spot Logged!");
+      
+      const multiplierText = newStreak > 1 ? " (1.1x Bonus!)" : "";
+      showToast(isFirstDiscovery ? `New Spot Logged!${multiplierText}` : `Daily Logged! Streak: ${newStreak}${multiplierText}`);
     }
   };
 
   // --- PROFILE ACTIONS ---
   const saveUsername = async () => {
-    const cleaned = tempUsername.trim(); // No more @ stripping
-    
+    const cleaned = tempUsername.trim();
     if (cleaned.length < 3) return showToast("Name too short", "error");
     if (cleaned.includes('@') && cleaned.includes('.')) {
         return showToast("Emails not allowed as names", "error");
     }
 
     const { error } = await supabase.from('profiles')
-      .update({ 
-        username: cleaned, 
-        last_username_change: new Date().toISOString() 
-      })
+      .update({ username: cleaned, last_username_change: new Date().toISOString() })
       .eq('id', user.id);
     
     if (error) {
-      if (error.code === '23505') {
-        showToast("That username is already taken!", "error");
-      } else {
-        showToast("Failed to update identity", "error");
-      }
+      if (error.code === '23505') showToast("Username taken!", "error");
+      else showToast("Failed to update identity", "error");
       return;
     }
 
@@ -173,10 +184,7 @@ export function useGameLogic(user, showToast) {
   };
 
   const resetTimer = async () => { 
-    const { error } = await supabase.from('profiles')
-      .update({ last_username_change: null })
-      .eq('id', user.id);  
-  
+    const { error } = await supabase.from('profiles').update({ last_username_change: null }).eq('id', user.id);  
     if (!error) {
       setLastChange(null);
       showToast("Cooldown Reset!", "success");
@@ -186,7 +194,6 @@ export function useGameLogic(user, showToast) {
   const addNewSpot = async (s) => { 
     const id = s.name.toLowerCase().replace(/\s+/g, '-'); 
     const { error } = await supabase.from('spots').insert([{ id, ...s }]); 
-  
     if (!error) {
       setSpots(prev => ({ ...prev, [id]: { id, ...s } })); 
       showToast(`${s.name} added!`);

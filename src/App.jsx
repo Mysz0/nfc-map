@@ -112,6 +112,7 @@ export default function App() {
           <HomeTab 
             isNearSpot={isNearSpot} 
             activeSpotId={activeSpotId}
+            claimSpot={claimSpot}
             totalPoints={unlockedSpots.reduce((sum, id) => {
               const basePoints = spots[id]?.points || 0;
               const multiplier = visitData.streak > 1 ? 1.1 : 1.0;
