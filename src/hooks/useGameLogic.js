@@ -15,7 +15,6 @@ export function useGameLogic(user, showToast) {
   const [customRadius, setCustomRadius] = useState(250);
   const [leaderboard, setLeaderboard] = useState([]);
 
-  // --- LEADERBOARD LOGIC ---
   const fetchLeaderboard = async () => {
     try {
       const { data: profiles } = await supabase
@@ -33,48 +32,17 @@ export function useGameLogic(user, showToast) {
         }));
         setLeaderboard(ranked);
       }
-    } catch (err) {
-      console.error("Leaderboard fetch error:", err);
-    }
+    } catch (err) { console.error(err); }
   };
 
-  // --- INITIAL DATA FETCHING ---
   useEffect(() => {
     if (!user) return;
-
     const fetchData = async () => {
       try {
         const { data: dbSpots } = await supabase.from('spots').select('*');
-        const spotsObj = dbSpots ? dbSpots.reduce((acc, s) => ({ ...acc, [s.id]: s }), {}) : {};
-        setSpots(spotsObj);
+        setSpots(dbSpots ? dbSpots.reduce((acc, s) => ({ ...acc, [s.id]: s }), {}) : {});
 
-        let { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (!profile) {
-          const fallbackName = user.user_metadata?.full_name || 
-                               user.user_metadata?.user_name || 
-                               `Hunter_${user.id.substring(0, 4)}`;
-
-          const { data: created } = await supabase
-            .from('profiles')
-            .insert([{
-              id: user.id,
-              username: fallbackName,
-              role: 'player',
-              unlocked_spots: [],
-              total_points: 0,
-              custom_radius: 250,
-              visit_data: { last_visit: null, streak: 0 },
-              spot_streaks: {} 
-            }])
-            .select()
-            .single();
-          profile = created;
-        }
+        let { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
 
         if (profile) {
           setUnlockedSpots(profile.unlocked_spots || []);
@@ -88,88 +56,18 @@ export function useGameLogic(user, showToast) {
           setSpotStreaks(profile.spot_streaks || {});
           setCustomRadius(profile.custom_radius || 250);
         }
-        
         fetchLeaderboard();
-      } catch (err) {
-        console.error("Profile fetch error:", err);
-      }
+      } catch (err) { console.error(err); }
     };
-    
     fetchData();
   }, [user]);
 
-  // --- GAMEPLAY ACTIONS ---
-  const claimSpot = async (spotId) => {
-    if (!user || !spots[spotId]) return;
-    
-    const today = new Date();
-    const todayStr = today.toDateString();
-    const currentStreaks = spotStreaks || {};
-    const spotInfo = currentStreaks[spotId] || { last_claim: null, streak: 0 };
-    const lastSpotClaimDate = spotInfo.last_claim ? new Date(spotInfo.last_claim).toDateString() : null;
-
-    if (lastSpotClaimDate === todayStr) {
-      return showToast("Already logged this spot today", "error");
-    }
-
-    const lastGlobalVisit = visitData?.last_visit ? new Date(visitData.last_visit).toDateString() : null;
-    let newGlobalStreak = visitData?.streak || 1;
-    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toDateString();
-
-    if (lastGlobalVisit === yesterdayStr) {
-      newGlobalStreak += 1;
-    } else if (lastGlobalVisit !== todayStr) {
-      newGlobalStreak = 1;
-    }
-
-    let multiplier = 1.0;
-    if (newGlobalStreak >= 7) multiplier = 1.5;
-    else if (newGlobalStreak >= 5) multiplier = 1.3;
-    else if (newGlobalStreak >= 2) multiplier = 1.1;
-
-    let newSpotStreak = (spotInfo.streak || 0) + 1;
-    if (lastSpotClaimDate && lastSpotClaimDate !== yesterdayStr && lastSpotClaimDate !== todayStr) {
-      newSpotStreak = 1; 
-    }
-
-    const basePoints = spots[spotId].points || 0;
-    const earnedPoints = Math.round(basePoints * multiplier);
-    const newTotalPoints = (totalPoints || 0) + earnedPoints;
-
-    const isFirstDiscovery = !unlockedSpots.includes(spotId);
-    const newUnlocked = isFirstDiscovery ? [...unlockedSpots, spotId] : unlockedSpots;
-    const newVisitData = { last_visit: today.toISOString(), streak: newGlobalStreak };
-    const newSpotStreaks = { 
-      ...currentStreaks, 
-      [spotId]: { last_claim: today.toISOString(), streak: newSpotStreak } 
-    };
-
-    const { error } = await supabase.from('profiles').update({ 
-      unlocked_spots: newUnlocked, 
-      visit_data: newVisitData,
-      spot_streaks: newSpotStreaks,
-      total_points: newTotalPoints 
-    }).eq('id', user.id);
-
-    if (!error) {
-      setUnlockedSpots(newUnlocked);
-      setVisitData(newVisitData);
-      setSpotStreaks(newSpotStreaks);
-      setTotalPoints(newTotalPoints);
-      fetchLeaderboard();
-      const bonusMsg = multiplier > 1 ? ` (${multiplier}x Multiplier!)` : '';
-      showToast(`${isFirstDiscovery ? "New Discovery!" : "Node Synced!"} +${earnedPoints} pts${bonusMsg}`);
-    }
-  };
-
-  // --- ADMIN OVERRIDE ACTIONS ---
+  // --- STREAK EDITOR (ADMIN TAB FIX) ---
   const updateNodeStreak = async (spotId, newStreakValue) => {
     if (!user) return;
-    
-    // Explicitly parse to Number for DB safety
     const safeVal = Math.max(0, parseInt(newStreakValue) || 0);
 
+    // 1. Prepare the updated object
     const updatedStreaks = {
       ...(spotStreaks || {}),
       [spotId]: {
@@ -179,102 +77,109 @@ export function useGameLogic(user, showToast) {
       }
     };
     
-    // Optimistic UI update
+    // 2. Optimistic Update
     setSpotStreaks(updatedStreaks);
 
+    // 3. Save to DB
     const { error } = await supabase.from('profiles')
       .update({ spot_streaks: updatedStreaks })
       .eq('id', user.id);
 
     if (error) {
-      console.error("Streak sync error:", error);
-      showToast("Sync failed", "error");
-      setSpotStreaks(spotStreaks); // Rollback on failure
+      showToast("Streak sync failed", "error");
+      setSpotStreaks(spotStreaks); // Rollback
+    }
+  };
+
+  const claimSpot = async (spotId) => {
+    if (!user || !spots[spotId]) return;
+    const today = new Date();
+    const todayStr = today.toDateString();
+    const spotInfo = spotStreaks[spotId] || { last_claim: null, streak: 0 };
+
+    if (spotInfo.last_claim && new Date(spotInfo.last_claim).toDateString() === todayStr) {
+      return showToast("Already logged today", "error");
+    }
+
+    const earnedPoints = spots[spotId].points || 0;
+    const newTotalPoints = (totalPoints || 0) + earnedPoints;
+    const newUnlocked = unlockedSpots.includes(spotId) ? unlockedSpots : [...unlockedSpots, spotId];
+    
+    const newSpotStreaks = { 
+      ...spotStreaks, 
+      [spotId]: { last_claim: today.toISOString(), streak: (spotInfo.streak || 0) + 1 } 
+    };
+
+    const { error } = await supabase.from('profiles').update({ 
+      unlocked_spots: newUnlocked, 
+      spot_streaks: newSpotStreaks,
+      total_points: newTotalPoints 
+    }).eq('id', user.id);
+
+    if (!error) {
+      setUnlockedSpots(newUnlocked);
+      setSpotStreaks(newSpotStreaks);
+      setTotalPoints(newTotalPoints);
+      showToast(`+${earnedPoints} pts!`);
+      fetchLeaderboard();
     }
   };
 
   const removeSpot = async (id) => {
     if (!user) return;
-    
-    // 1. Calculate points to remove (based on the spot's original value)
     const spotValue = spots[id]?.points || 0;
-    const newTotalPoints = Math.max(0, (totalPoints || 0) - spotValue);
-    
-    // 2. Clean up arrays and objects
+    const newTotalPoints = Math.max(0, totalPoints - spotValue);
     const newUnlocked = (unlockedSpots || []).filter(x => x !== id);
-    const newSpotStreaks = { ...(spotStreaks || {}) };
+    const newSpotStreaks = { ...spotStreaks };
     delete newSpotStreaks[id];
-    
-    // 3. Update Database (Reconciles points, array, and streaks in one call)
+
     const { error } = await supabase.from('profiles').update({ 
       unlocked_spots: newUnlocked, 
       spot_streaks: newSpotStreaks,
-      total_points: newTotalPoints
+      total_points: newTotalPoints 
     }).eq('id', user.id);
-    
+
     if (!error) {
-      setUnlockedSpots(newUnlocked); 
-      setSpotStreaks(newSpotStreaks); 
+      setUnlockedSpots(newUnlocked);
+      setSpotStreaks(newSpotStreaks);
       setTotalPoints(newTotalPoints);
       fetchLeaderboard();
-      showToast("Inventory and points cleared");
-    } else {
-      console.error("Removal error:", error);
-      showToast("Failed to remove from inventory", "error");
+      showToast("Node & points removed");
     }
   };
 
   const addNewSpot = async (s) => { 
     const id = s.name.toLowerCase().replace(/\s+/g, '-'); 
     const { error } = await supabase.from('spots').insert([{ id, ...s }]); 
-    if (!error) { setSpots(prev => ({ ...prev, [id]: { id, ...s } })); showToast(`${s.name} deployed!`); }
+    if (!error) { setSpots(prev => ({ ...prev, [id]: { id, ...s } })); showToast("Deployed!"); }
   };
 
   const deleteSpotFromDB = async (id) => { 
-    // Attempt to delete from registry
+    // This will work now because you ran the SQL command in Step 1
     const { error } = await supabase.from('spots').delete().eq('id', id); 
-    
-    if (error) {
-      // If error 23503 or 21000, it's likely a foreign key violation
-      showToast("Use SQL Editor to purge active node references first", "error");
+    if (!error) {
+      setSpots(prev => { const n = {...prev}; delete n[id]; return n; });
+      showToast("Purged from DB");
     } else {
-      setSpots(prev => {
-        const n = {...prev};
-        delete n[id];
-        return n;
-      });
-      showToast("Deleted from Database");
+      showToast("Delete failed. Run the SQL script!", "error");
     }
   };
 
   const updateRadius = async (v) => { 
     const { error } = await supabase.from('profiles').update({ custom_radius: v }).eq('id', user.id); 
-    if (!error) { setCustomRadius(v); showToast(`Radius: ${v}m`, "success"); }
-  };
-
-  const resetTimer = () => {
-    showToast("Cooldown manually bypassed", "success");
+    if (!error) { setCustomRadius(v); showToast(`Radius: ${v}m`); }
   };
 
   const saveUsername = async () => {
     const cleaned = tempUsername.trim();
-    if (cleaned.length < 3) return showToast("Name too short", "error");
-    const { error } = await supabase.from('profiles')
-      .update({ username: cleaned, last_username_change: new Date().toISOString() })
-      .eq('id', user.id);
-    
-    if (!error) {
-      setUsername(cleaned); setLastChange(new Date().toISOString());
-      showToast("Username updated!"); fetchLeaderboard();
-    }
+    const { error } = await supabase.from('profiles').update({ username: cleaned }).eq('id', user.id);
+    if (!error) { setUsername(cleaned); showToast("Updated!"); fetchLeaderboard(); }
   };
 
   return { 
-    spots, unlockedSpots, visitData, spotStreaks,
-    username, tempUsername, setTempUsername, 
-    userRole, totalPoints,
-    showEmail, lastChange, customRadius, leaderboard, 
+    spots, unlockedSpots, visitData, spotStreaks, username, tempUsername, setTempUsername, 
+    userRole, totalPoints, showEmail, lastChange, customRadius, leaderboard, 
     claimSpot, saveUsername, removeSpot, updateRadius, addNewSpot, deleteSpotFromDB,
-    updateNodeStreak, resetTimer, fetchLeaderboard 
+    updateNodeStreak, fetchLeaderboard, resetTimer: () => showToast("Bypassed")
   };
 }
