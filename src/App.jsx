@@ -75,11 +75,21 @@ export default function App() {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
+      const isMobile = window.innerWidth < 768; // Only run hide-logic on mobile
       
-      // 1. Existing Top detection
+      // 1. Top detection (always run)
       setIsAtTop(currentScrollY < 100);
 
-      // 2. Dynamic Navbar Visibility logic
+      // 2. Optimized Navbar logic
+      if (!isMobile) {
+        setIsNavbarVisible(true);
+        return;
+      }
+
+      // Add a buffer (10px) so it doesn't flicker on tiny movements
+      const scrollDiff = Math.abs(currentScrollY - lastScrollY);
+      if (scrollDiff < 10) return; 
+
       if (currentScrollY < lastScrollY || currentScrollY < 50) {
         setIsNavbarVisible(true);
       } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
@@ -151,7 +161,7 @@ export default function App() {
     }
   };
 
-  // --- ACTIONS ---
+  // --- STANDARD ACTIONS ---
   const handleLogout = async () => { await supabase.auth.signOut(); window.location.href = '/'; };
 
   const toggleEmailVisibility = async () => {
@@ -162,13 +172,8 @@ export default function App() {
 
   const saveUsername = async () => {
     const cleaned = tempUsername.replace('@', '').trim();
-    if (cleaned === username) return showToast("No changes detected", "error");
-
-    const { error } = await supabase.from('profiles').update({ 
-      username: cleaned, 
-      last_username_change: new Date().toISOString() 
-    }).eq('id', user.id);
-
+    if (cleaned === username) return showToast("Name is already set", "error");
+    const { error } = await supabase.from('profiles').update({ username: cleaned, last_username_change: new Date().toISOString() }).eq('id', user.id);
     if (!error) {
       setUsername(cleaned);
       setLastChange(new Date().toISOString());
@@ -183,21 +188,15 @@ export default function App() {
     today.setHours(0,0,0,0);
     const lastVisit = visitData.last_visit ? new Date(visitData.last_visit) : null;
     if (lastVisit) lastVisit.setHours(0,0,0,0);
-    
     let newStreak = 1;
     if (lastVisit) {
       const diffDays = Math.floor((today - lastVisit) / (1000 * 60 * 60 * 24));
       if (diffDays === 0) newStreak = visitData.streak;
       else if (diffDays === 1) newStreak = visitData.streak + 1;
     }
-
     const newUnlocked = [...unlockedSpots, spotId];
     const newVisitData = { last_visit: new Date().toISOString(), streak: newStreak };
-    const { error } = await supabase.from('profiles').update({ 
-      unlocked_spots: newUnlocked, 
-      visit_data: newVisitData 
-    }).eq('id', user.id);
-
+    const { error } = await supabase.from('profiles').update({ unlocked_spots: newUnlocked, visit_data: newVisitData }).eq('id', user.id);
     if (!error) {
       setUnlockedSpots(newUnlocked);
       setVisitData(newVisitData);
@@ -211,18 +210,15 @@ export default function App() {
     const { error } = await supabase.from('profiles').update({ last_username_change: null }).eq('id', user.id);
     if (!error) { setLastChange(null); showToast("Cooldown reset!"); }
   };
-
   const updateRadius = async (newVal) => {
     const { error } = await supabase.from('profiles').update({ custom_radius: newVal }).eq('id', user.id);
     if (!error) { setCustomRadius(newVal); showToast(`Radius: ${newVal * 1000}m`); }
   };
-
   const addNewSpot = async (spotData) => {
     const id = spotData.name.toLowerCase().replace(/\s+/g, '-');
     const { error } = await supabase.from('spots').insert([{ id, ...spotData }]);
     if (!error) { setSpots(prev => ({ ...prev, [id]: { id, ...spotData } })); showToast("Node deployed!"); }
   };
-
   const deleteSpotFromDB = async (spotId) => {
     const { error } = await supabase.from('spots').delete().eq('id', spotId);
     if (!error) {
@@ -233,20 +229,15 @@ export default function App() {
     }
   };
 
-  // --- RENDER CALCS ---
   const currentMultiplier = visitData.streak > 1 ? 1.1 : 1.0;
   const totalPoints = unlockedSpots.reduce((sum, id) => sum + Math.round((spots[id]?.points || 0) * currentMultiplier), 0);
 
   if (loading) return <div className={`min-h-screen ${colors.bg} flex items-center justify-center`}><div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>;
 
-  // --- GUEST VIEW ---
   if (!user) return (
     <div className={`min-h-screen flex flex-col items-center justify-center ${colors.bg} p-6 relative transition-colors duration-500`}>
       <button ref={themeMag.ref} onMouseMove={themeMag.handleMouseMove} onMouseLeave={themeMag.reset}
-        style={{ 
-          transform: `translate(${themeMag.position.x}px, ${themeMag.position.y}px)`,
-          transition: themeMag.position.x === 0 ? 'transform 0.5s' : 'none'
-        }}
+        style={{ transform: `translate(${themeMag.position.x}px, ${themeMag.position.y}px)`, transition: themeMag.position.x === 0 ? 'transform 0.5s' : 'none' }}
         onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} 
         className={`fixed top-6 right-6 p-3.5 rounded-2xl border transition-all z-[10000] ${isDark ? 'bg-zinc-900/80 border-white/10 text-emerald-400' : 'bg-white/80 border-emerald-200 text-emerald-600 shadow-lg backdrop-blur-md'}`}>
         {isDark ? <Sun size={18}/> : <Moon size={18}/>}
@@ -259,10 +250,8 @@ export default function App() {
     </div>
   );
 
-  // --- MAIN APP ---
   return (
     <div className={`min-h-screen ${colors.bg} ${colors.text} pb-36 transition-colors duration-500`}>
-      
       {statusMsg.text && (
         <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[10001] flex items-center gap-2 px-6 py-3 rounded-2xl border backdrop-blur-xl transition-all animate-in fade-in slide-in-from-top-4 duration-300 ${statusMsg.type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'}`}>
           {statusMsg.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
@@ -271,10 +260,7 @@ export default function App() {
       )}
 
       <button ref={themeMag.ref} onMouseMove={themeMag.handleMouseMove} onMouseLeave={themeMag.reset}
-        style={{ 
-          transform: `translate(${themeMag.position.x + (isAtTop ? -58 : 0)}px, ${themeMag.position.y}px)`,
-          transition: themeMag.position.x === 0 ? 'transform 0.8s' : 'none'
-        }}
+        style={{ transform: `translate(${themeMag.position.x + (isAtTop ? -58 : 0)}px, ${themeMag.position.y}px)`, transition: themeMag.position.x === 0 ? 'transform 0.8s' : 'none' }}
         onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')} 
         className={`fixed top-16 right-10 p-3.5 rounded-2xl border z-[10000] ${isDark ? 'bg-zinc-900/80 border-white/10 text-emerald-400' : 'bg-white/80 border-emerald-200 text-emerald-600 shadow-lg backdrop-blur-md'}`}
       >
@@ -301,11 +287,9 @@ export default function App() {
         )}
       </div>
 
-      {/* DYNAMIC NAVBAR WRAPPER */}
-      <div className={`fixed bottom-0 left-0 right-0 z-[50] transition-transform duration-500 ease-in-out ${isNavbarVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`}>
+      <div className={`fixed bottom-0 left-0 right-0 z-[50] transition-all duration-500 ease-in-out ${isNavbarVisible ? 'translate-y-0 opacity-100' : 'translate-y-[120%] opacity-0'}`}>
         <Navbar activeTab={activeTab} setActiveTab={setActiveTab} isAdmin={isAdmin} colors={colors} />
       </div>
-
     </div>
   );
 }
