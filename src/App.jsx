@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, MapPin } from 'lucide-react'; // Added MapPin import
 import 'leaflet/dist/leaflet.css';
 
 // MODULAR IMPORTS
@@ -14,7 +14,7 @@ import HomeTab from './components/Tabs/HomeTab';
 import ExploreTab from './components/Tabs/ExploreTab';
 import LeaderboardTab from './components/Tabs/LeaderboardTab';
 import ProfileTab from './components/Tabs/ProfileTab';
-import AdminTab from './components/Tabs/AdminTab'; // I'll provide this below
+import AdminTab from './components/Tabs/AdminTab';
 
 const ADMIN_UID = import.meta.env.VITE_ADMIN_UID;
 
@@ -56,14 +56,12 @@ export default function App() {
 
   useEffect(() => {
     const initApp = async () => {
-      // Fetch Spots
       const { data: dbSpots } = await supabase.from('spots').select('*');
       if (dbSpots) {
         const spotsObj = dbSpots.reduce((acc, s) => ({ ...acc, [s.id]: s }), {});
         setSpots(spotsObj);
         fetchLeaderboard(spotsObj);
       }
-      // Auth Session
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUser(session.user);
@@ -85,7 +83,6 @@ export default function App() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  // Check proximity to any spot
   useEffect(() => {
     if (userLocation && Object.values(spots).length > 0) {
       const nearby = Object.values(spots).some(spot => 
@@ -132,23 +129,29 @@ export default function App() {
 
   // --- AUTH & LOADING VIEWS ---
   if (loading) return (
-    <div className={`min-h-screen ${colors.bg} flex items-center justify-center`}>
+    <div className={`min-h-screen ${colors.bg} flex items-center justify-center transition-colors duration-500`}>
       <div className="w-6 h-6 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
     </div>
   );
 
   if (!user) return (
-    <div className={`min-h-screen flex flex-col items-center justify-center ${colors.bg} p-6 relative`}>
+    <div className={`min-h-screen flex flex-col items-center justify-center ${colors.bg} p-6 relative transition-colors duration-500`}>
+      {/* Theme Toggle Button - Matching Main App Styling */}
       <button ref={themeMag.ref} onMouseMove={themeMag.handleMouseMove} onMouseLeave={themeMag.reset}
         style={{ transform: `translate(${themeMag.position.x}px, ${themeMag.position.y}px)` }}
         onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} 
-        className={`fixed top-6 right-6 p-3.5 rounded-2xl border ${isDark ? 'bg-zinc-900 text-emerald-400 border-white/10' : 'bg-white text-emerald-600 border-emerald-200 shadow-lg'}`}>
+        className={`fixed top-6 right-6 p-3.5 rounded-2xl border transition-all duration-300 ease-out active:scale-90 z-[10000] ${isDark ? 'bg-zinc-900/80 border-white/10 text-emerald-400' : 'bg-white/80 border-emerald-200 text-emerald-600 shadow-lg backdrop-blur-md'}`}>
         {isDark ? <Sun size={18}/> : <Moon size={18}/>}
       </button>
+
       <div className="w-16 h-16 bg-emerald-500 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-emerald-500/20 rotate-3">
         <MapPin size={32} className="text-white" />
       </div>
-      <h1 className={`text-3xl font-bold mb-8 tracking-tight ${colors.text}`}>SpotHunt</h1>
+
+      <h1 className={`text-3xl font-bold mb-8 tracking-tight ${colors.text} transition-colors duration-500`}>
+        SpotHunt
+      </h1>
+
       <button onClick={() => supabase.auth.signInWithOAuth({ provider: 'github' })} 
         className="bg-emerald-500 text-white px-10 py-4 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all">
         Sign in with GitHub
