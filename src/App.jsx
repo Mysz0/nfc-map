@@ -33,8 +33,6 @@ export default function App() {
   const [isNearSpot, setIsNearSpot] = useState(false);
   const [mapCenter] = useState([40.730610, -73.935242]);
   const [leaderboard, setLeaderboard] = useState([]);
-  
-  // NEW: Scroll state to trigger the "dodge" animation
   const [isAtTop, setIsAtTop] = useState(true);
 
   // --- HELPERS & HOOKS ---
@@ -68,7 +66,6 @@ export default function App() {
     localStorage.setItem('theme', theme);
   }, [theme, isDark]);
 
-  // Scroll Listener for the Button Dodge
   useEffect(() => {
     const handleScroll = () => {
       setIsAtTop(window.scrollY < 80);
@@ -160,17 +157,41 @@ export default function App() {
     </div>
   );
 
-  if (!user) return (/* Identity check remains same */);
+  if (!user) return (
+    <div className={`min-h-screen flex flex-col items-center justify-center ${colors.bg} p-6 relative transition-colors duration-500`}>
+      <button ref={themeMag.ref} onMouseMove={themeMag.handleMouseMove} onMouseLeave={themeMag.reset}
+        style={{ 
+          transform: `translate(${themeMag.position.x}px, ${themeMag.position.y}px)`,
+          transition: themeMag.position.x === 0 ? 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)' : 'none'
+        }}
+        onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} 
+        className={`fixed top-6 right-6 p-3.5 rounded-2xl border transition-all duration-300 ease-out active:scale-90 z-[10000] ${isDark ? 'bg-zinc-900/80 border-white/10 text-emerald-400' : 'bg-white/80 border-emerald-200 text-emerald-600 shadow-lg backdrop-blur-md'}`}>
+        {isDark ? <Sun size={18}/> : <Moon size={18}/>}
+      </button>
+
+      <div className="w-16 h-16 bg-emerald-500 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-emerald-500/20 rotate-3">
+        <MapPin size={32} className="text-white" />
+      </div>
+
+      <h1 className={`text-3xl font-bold mb-8 tracking-tight ${colors.text} transition-colors duration-500`}>
+        SpotHunt
+      </h1>
+
+      <button onClick={() => supabase.auth.signInWithOAuth({ provider: 'github' })} 
+        className="bg-emerald-500 text-white px-10 py-4 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all">
+        Sign in with GitHub
+      </button>
+    </div>
+  );
 
   return (
     <div className={`min-h-screen ${colors.bg} ${colors.text} pb-36 transition-colors duration-500 selection:bg-emerald-500/30`}>
       
-      {/* DODGING THEME TOGGLE: Slides left -60px when header is present */}
       <button ref={themeMag.ref} onMouseMove={themeMag.handleMouseMove} onMouseLeave={themeMag.reset}
         style={{ 
           transform: `translate(${themeMag.position.x + (isAtTop ? -60 : 0)}px, ${themeMag.position.y}px)`,
           transition: themeMag.position.x === 0 
-            ? 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' // Bouncy spring effect
+            ? 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' 
             : 'none'
         }}
         onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')} 
@@ -189,7 +210,6 @@ export default function App() {
         handleLogout={handleLogout} 
       />
 
-      {/* Tabs rendering... */}
       <div className="max-w-md mx-auto px-6 -mt-16 relative z-30">
         {activeTab === 'home' && <HomeTab isNearSpot={isNearSpot} totalPoints={totalPoints} foundCount={unlockedSpots.length} unlockedSpots={unlockedSpots} spots={spots} colors={colors} />}
         {activeTab === 'leaderboard' && <LeaderboardTab leaderboard={leaderboard} username={username} colors={colors} />}
