@@ -33,6 +33,8 @@ export default function App() {
   const [isNearSpot, setIsNearSpot] = useState(false);
   const [mapCenter] = useState([40.730610, -73.935242]);
   const [leaderboard, setLeaderboard] = useState([]);
+  
+  // NEW: Refined Scroll state
   const [isAtTop, setIsAtTop] = useState(true);
 
   // --- HELPERS & HOOKS ---
@@ -66,9 +68,11 @@ export default function App() {
     localStorage.setItem('theme', theme);
   }, [theme, isDark]);
 
+  // Precise scroll listener
   useEffect(() => {
     const handleScroll = () => {
-      setIsAtTop(window.scrollY < 80);
+      // Threshold set to match the header height transition
+      setIsAtTop(window.scrollY < 20);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -187,15 +191,16 @@ export default function App() {
   return (
     <div className={`min-h-screen ${colors.bg} ${colors.text} pb-36 transition-colors duration-500 selection:bg-emerald-500/30`}>
       
+      {/* PERFECT ALIGNMENT: Slides exactly -58px left to align with Logout's gap */}
       <button ref={themeMag.ref} onMouseMove={themeMag.handleMouseMove} onMouseLeave={themeMag.reset}
         style={{ 
-          transform: `translate(${themeMag.position.x + (isAtTop ? -60 : 0)}px, ${themeMag.position.y}px)`,
+          transform: `translate(${themeMag.position.x + (isAtTop ? -58 : 0)}px, ${themeMag.position.y}px)`,
           transition: themeMag.position.x === 0 
             ? 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' 
             : 'none'
         }}
         onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')} 
-        className={`fixed top-6 right-6 p-3.5 rounded-2xl border active:scale-90 z-[10000] ${isDark ? 'bg-zinc-900/80 border-white/10 text-emerald-400' : 'bg-white/80 border-emerald-200 text-emerald-600 shadow-lg backdrop-blur-md'}`}
+        className={`fixed top-16 right-10 p-3.5 rounded-2xl border active:scale-90 z-[10000] ${isDark ? 'bg-zinc-900/80 border-white/10 text-emerald-400' : 'bg-white/80 border-emerald-200 text-emerald-600 shadow-lg backdrop-blur-md'}`}
       >
         {isDark ? <Sun size={18}/> : <Moon size={18}/>}
       </button>

@@ -4,11 +4,10 @@ import { LogOut } from 'lucide-react';
 export default function Header({ isAdmin, username, email, showEmail, isDark, logoutMag, handleLogout }) {
   return (
     <header className="relative pt-16 pb-32 px-10 rounded-b-[4.5rem] border-b border-white/[0.05]">
-      {/* Background elements moved to separate divs to prevent clipping button movement */}
       <div className="absolute inset-0 mist-overlay z-0 rounded-b-[4.5rem] overflow-hidden" />
       <div className={`absolute inset-0 ${isDark ? 'bg-zinc-950/40' : 'bg-white/10'} backdrop-blur-3xl z-10 rounded-b-[4.5rem]`} />
       
-      <div className="max-w-md mx-auto flex justify-between items-center relative z-20">
+      <div className="max-w-md mx-auto flex justify-between items-start relative z-20">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5">
              {isAdmin ? (
@@ -22,7 +21,6 @@ export default function Header({ isAdmin, username, email, showEmail, isDark, lo
             {username || 'Hunter'}<span className="text-emerald-500 font-normal">.</span>
           </h1>
 
-          {/* Email displayed as inactive text under username if enabled */}
           {showEmail && email && (
             <p className="text-[10px] font-medium text-zinc-500 mt-1.5 lowercase opacity-60 truncate tracking-wide">
               {email}
@@ -30,17 +28,14 @@ export default function Header({ isAdmin, username, email, showEmail, isDark, lo
           )}
         </div>
         
-        <div className="flex items-center gap-3">
-          {/* Note: This area leaves space for the Floating Theme Switcher 
-              which slides in from App.jsx when at the top.
-          */}
+        {/* Row for buttons to ensure vertical alignment is perfect */}
+        <div className="flex items-center">
           <button 
             ref={logoutMag.ref} 
             onMouseMove={logoutMag.handleMouseMove} 
             onMouseLeave={logoutMag.reset}
             style={{ 
               transform: `translate(${logoutMag.position.x}px, ${logoutMag.position.y}px)`,
-              /* Smooth spring-back transition that matches the Theme Toggle */
               transition: logoutMag.position.x === 0 
                 ? 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' 
                 : 'none'
