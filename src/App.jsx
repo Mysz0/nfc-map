@@ -69,7 +69,7 @@ export default function App() {
   // Precise scroll listener to trigger horizontal dodge
   useEffect(() => {
     const handleScroll = () => {
-      setIsAtTop(window.scrollY < 20);
+      setIsAtTop(window.scrollY < 120);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
