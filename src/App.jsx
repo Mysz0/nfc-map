@@ -40,7 +40,8 @@ export default function App() {
     userRole, // <--- Pulled from updated useGameLogic
     showEmail, lastChange, customRadius, leaderboard,
     claimSpot, saveUsername, toggleEmailVisibility,
-    removeSpot, updateRadius, resetTimer, addNewSpot, deleteSpotFromDB
+    removeSpot, updateRadius, resetTimer, addNewSpot, deleteSpotFromDB,
+    updateNodeStreak // ⭐ ADD THIS - it was missing!
   } = useGameLogic(user, showToast);
 
   // High-accuracy location + proximity check
@@ -165,7 +166,9 @@ export default function App() {
             updateRadius={updateRadius} 
             resetTimer={resetTimer} 
             addNewSpot={addNewSpot} 
-            deleteSpotFromDB={deleteSpotFromDB} 
+            deleteSpotFromDB={deleteSpotFromDB}
+            spotStreaks={spotStreaks} // ⭐ ADD THIS
+            updateNodeStreak={updateNodeStreak} // ⭐ ADD THIS - Now streak editor will work!
           />
         )}
       </div>
