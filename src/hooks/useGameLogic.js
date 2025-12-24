@@ -167,7 +167,7 @@ export function useGameLogic(user, showToast) {
   const updateNodeStreak = async (spotId, newStreakValue) => {
     if (!user) return;
     
-    // Ensure we parse to integer to avoid DB type mismatches
+    // Explicitly parse to Number for DB safety
     const safeVal = Math.max(0, parseInt(newStreakValue) || 0);
 
     const updatedStreaks = {
@@ -179,6 +179,7 @@ export function useGameLogic(user, showToast) {
       }
     };
     
+    // Optimistic UI update
     setSpotStreaks(updatedStreaks);
 
     const { error } = await supabase.from('profiles')
@@ -188,22 +189,23 @@ export function useGameLogic(user, showToast) {
     if (error) {
       console.error("Streak sync error:", error);
       showToast("Sync failed", "error");
-      // Rollback UI on error
-      setSpotStreaks(spotStreaks);
+      setSpotStreaks(spotStreaks); // Rollback on failure
     }
   };
 
   const removeSpot = async (id) => {
     if (!user) return;
     
-    // Calculate new points by subtracting the base points of the removed spot
+    // 1. Calculate points to remove (based on the spot's original value)
     const spotValue = spots[id]?.points || 0;
-    const newTotalPoints = Math.max(0, totalPoints - spotValue);
+    const newTotalPoints = Math.max(0, (totalPoints || 0) - spotValue);
     
+    // 2. Clean up arrays and objects
     const newUnlocked = (unlockedSpots || []).filter(x => x !== id);
     const newSpotStreaks = { ...(spotStreaks || {}) };
     delete newSpotStreaks[id];
     
+    // 3. Update Database (Reconciles points, array, and streaks in one call)
     const { error } = await supabase.from('profiles').update({ 
       unlocked_spots: newUnlocked, 
       spot_streaks: newSpotStreaks,
@@ -215,7 +217,10 @@ export function useGameLogic(user, showToast) {
       setSpotStreaks(newSpotStreaks); 
       setTotalPoints(newTotalPoints);
       fetchLeaderboard();
-      showToast("Node and points removed");
+      showToast("Inventory and points cleared");
+    } else {
+      console.error("Removal error:", error);
+      showToast("Failed to remove from inventory", "error");
     }
   };
 
@@ -226,9 +231,18 @@ export function useGameLogic(user, showToast) {
   };
 
   const deleteSpotFromDB = async (id) => { 
+    // Attempt to delete from registry
     const { error } = await supabase.from('spots').delete().eq('id', id); 
-    if (!error) {
-      const n = {...spots}; delete n[id]; setSpots(n); 
+    
+    if (error) {
+      // If error 23503 or 21000, it's likely a foreign key violation
+      showToast("Use SQL Editor to purge active node references first", "error");
+    } else {
+      setSpots(prev => {
+        const n = {...prev};
+        delete n[id];
+        return n;
+      });
       showToast("Deleted from Database");
     }
   };

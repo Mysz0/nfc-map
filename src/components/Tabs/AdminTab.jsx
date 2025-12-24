@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Terminal, 
   Trash2, 
@@ -76,7 +76,7 @@ export default function AdminTab({
       name: newSpot.name,
       lat: parseFloat(newSpot.lat),
       lng: parseFloat(newSpot.lng),
-      points: parseInt(newSpot.points)
+      points: parseInt(newSpot.points) || 0
     });
 
     setNewSpot({ name: '', lat: '', lng: '', points: 50 });
@@ -211,6 +211,7 @@ export default function AdminTab({
         <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
           {filteredSpots.map(spot => {
             const currentStreak = spotStreaks?.[spot.id]?.streak || 0;
+            const isUnlocked = unlockedSpots.includes(spot.id);
 
             return (
               <div key={spot.id} className={`${isDark ? 'bg-white/5' : 'bg-white/30'} p-5 rounded-[2rem] border border-white/5 hover:border-emerald-500/20 transition-all space-y-4`}>
@@ -246,15 +247,17 @@ export default function AdminTab({
                   
                   <div className="flex gap-1 border-l border-white/10 pl-3">
                     <button 
-                      onClick={() => unlockedSpots.includes(spot.id) ? removeSpot(spot.id) : claimSpot(spot.id)} 
-                      className={`p-2 rounded-xl transition-all ${unlockedSpots.includes(spot.id) ? 'text-red-500 bg-red-500/10' : 'text-emerald-500 bg-emerald-500/10'}`}
+                      onClick={() => isUnlocked ? removeSpot(spot.id) : claimSpot(spot.id)} 
+                      className={`p-2 rounded-xl transition-all ${isUnlocked ? 'text-red-500 bg-red-500/10 shadow-lg shadow-red-500/10' : 'text-emerald-500 bg-emerald-500/10'}`}
+                      title={isUnlocked ? "Remove from inventory (Minus Points)" : "Claim manually (Plus Points)"}
                     >
-                      {unlockedSpots.includes(spot.id) ? <Trash2 size={14}/> : <Zap size={14}/>}
+                      {isUnlocked ? <Trash2 size={14}/> : <Zap size={14}/>}
                     </button>
                     
                     <button 
-                      onClick={() => { if(confirm(`Purge ${spot.name}?`)) deleteSpotFromDB(spot.id) }} 
+                      onClick={() => { if(confirm(`Purge ${spot.name} from Global Database?`)) deleteSpotFromDB(spot.id) }} 
                       className="p-2 text-zinc-600 hover:text-red-600 transition-colors"
+                      title="Delete from Database"
                     >
                       <ShieldAlert size={14} />
                     </button>
