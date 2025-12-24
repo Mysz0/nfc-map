@@ -1,0 +1,34 @@
+import { useState, useEffect } from 'react';
+
+export function useTheme() {
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+  const [isAtTop, setIsAtTop] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [isNavbarShrunk, setIsNavbarShrunk] = useState(false);
+
+  const isDark = theme === 'dark';
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    isDark ? root.classList.add('dark') : root.classList.remove('dark');
+    root.style.colorScheme = theme;
+    localStorage.setItem('theme', theme);
+  }, [theme, isDark]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      setIsAtTop(currentScrollY < 60);
+      if (currentScrollY > lastScrollY && currentScrollY > 20) {
+        setIsNavbarShrunk(true);
+      } else if (currentScrollY < lastScrollY) {
+        setIsNavbarShrunk(false);
+      }
+      setLastScrollY(currentScrollY);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
+
+  return { theme, setTheme, isDark, isAtTop, isNavbarShrunk };
+}
