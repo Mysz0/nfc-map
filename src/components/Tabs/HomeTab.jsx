@@ -1,13 +1,10 @@
 import React from 'react';
-import { Radar, Zap, Clock, TrendingUp } from 'lucide-react';
+import { Radar } from 'lucide-react';
 import StatCard from '../Shared/StatCard';
 
-export default function HomeTab({ isNearSpot, totalPoints, foundCount, unlockedSpots, visitData, spots, colors }) {
-  const today = new Date().toISOString().split('T')[0];
-
+export default function HomeTab({ isNearSpot, totalPoints, foundCount, unlockedSpots, spots, colors }) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
-      {/* 1. PROXIMITY ALERT - Feature Preserved */}
       {isNearSpot && (
         <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-3xl animate-in zoom-in-95 duration-500">
           <div className="bg-emerald-500 p-2 rounded-xl text-white animate-pulse"><Radar size={16} /></div>
@@ -15,69 +12,22 @@ export default function HomeTab({ isNearSpot, totalPoints, foundCount, unlockedS
         </div>
       )}
 
-      {/* 2. STAT CARD - Feature Preserved */}
       <StatCard mainVal={totalPoints} subVal={foundCount} colors={colors} />
 
-      {/* 3. UPDATED COLLECTIONS WITH STREAKS */}
-      <div className="space-y-4">
-        <h2 className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-500/50 px-4">Active Nodes & Streaks</h2>
-        
-        {(!unlockedSpots || unlockedSpots.length === 0) ? (
-          <div className={`${colors.card} p-10 rounded-[2.5rem] text-center border border-dashed border-zinc-500/20`}>
-            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">No active nodes detected</p>
-          </div>
-        ) : (
-          unlockedSpots.map(id => {
-            const spot = spots?.[id];
-            // Defensive check: if spot data isn't loaded yet, don't render and crash
-            if (!spot) return null;
-
-            const data = visitData?.[id] || { streak: 0, lastVisit: null };
-            const canCheckIn = data.lastVisit !== today;
-            const streakVal = data.streak || 0;
-            const multiplier = (1 + (streakVal * 0.1)).toFixed(1);
-
-            return (
-              <div key={id} className={`group relative ${colors.card} p-5 rounded-[2.2rem] border transition-all duration-300 hover:scale-[1.02] backdrop-blur-md overflow-hidden`}>
-                {/* Visual Flair */}
-                <div className="absolute -right-4 -top-4 opacity-[0.03] group-hover:opacity-10 transition-opacity">
-                  <TrendingUp size={100} />
-                </div>
-
-                <div className="flex items-center justify-between relative z-10">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold transition-colors ${canCheckIn ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-zinc-500/10 text-zinc-400'}`}>
-                      {canCheckIn ? <Zap size={20} fill="currentColor"/> : <Clock size={20}/>}
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm tracking-tight">{spot.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[9px] font-black bg-orange-500/10 text-orange-500 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
-                          {streakVal} Day Streak
-                        </span>
-                        <span className="text-[9px] font-black bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
-                          {multiplier}x
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="text-right">
-                    <p className="text-xs font-black tracking-tighter">+{Math.round(spot.points * parseFloat(multiplier))}</p>
-                    <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-widest">Yield</p>
-                  </div>
-                </div>
-
-                {/* Progress Bar for Recharging */}
-                <div className="mt-4 pt-4 border-t border-white/[0.05]">
-                  <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                    <div className={`h-full transition-all duration-500 ${canCheckIn ? 'w-full bg-emerald-500' : 'w-1/2 bg-zinc-700'}`} />
-                  </div>
-                </div>
+      <div className="space-y-3">
+        <h2 className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-500/50 px-4">Collections</h2>
+        {unlockedSpots.map(id => (
+          <div key={id} className={`collection-card ${colors.card} p-5 rounded-[2.2rem] flex items-center justify-between border transition-all duration-300 hover:scale-[1.02] backdrop-blur-md`}>
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center font-bold">✓</div>
+              <div>
+                <p className="font-bold text-sm tracking-tight">{spots[id]?.name}</p>
+                <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-widest">Entry Logged</p>
               </div>
-            );
-          })
-        )}
+            </div>
+            <div className="text-xs font-bold opacity-30">+{spots[id]?.points}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
