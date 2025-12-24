@@ -19,9 +19,9 @@ export function useTheme() {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       setIsAtTop(currentScrollY < 60);
-      if (currentScrollY > lastScrollY && currentScrollY > 20) {
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
         setIsNavbarShrunk(true);
-      } else if (currentScrollY < lastScrollY) {
+      } else if (lastScrollY - currentScrollY > 15 || currentScrollY < 10) {
         setIsNavbarShrunk(false);
       }
       setLastScrollY(currentScrollY);

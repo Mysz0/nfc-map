@@ -9,38 +9,17 @@ export function useGameLogic(user, showToast) {
   const [tempUsername, setTempUsername] = useState('');
   const [showEmail, setShowEmail] = useState(false);
   const [lastChange, setLastChange] = useState(null);
-  const [customRadius, setCustomRadius] = useState(250);
+  const [customRadius, setCustomRadius] = useState(50); // Fixed default to 50m
   const [leaderboard, setLeaderboard] = useState([]);
 
-  // --- INITIAL DATA FETCHING ---
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchData = async () => {
-      // Fetch Spots
-      const { data: dbSpots } = await supabase.from('spots').select('*');
-      const spotsObj = dbSpots ? dbSpots.reduce((acc, s) => ({ ...acc, [s.id]: s }), {}) : {};
-      setSpots(spotsObj);
-
-      // Fetch User Profile
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      if (profile) {
-        setUnlockedSpots(profile.unlocked_spots || []);
-        setUsername(profile.username || '');
-        setTempUsername(profile.username || '');
-        setShowEmail(profile.show_email ?? false);
-        setLastChange(profile.last_username_change);
-        setVisitData(profile.visit_data || { last_visit: null, streak: 0 });
-        setCustomRadius(profile.custom_radius || 0.25);
-        fetchLeaderboard(spotsObj);
-      }
-    };
-    fetchData();
-  }, [user]);
-
   // --- LEADERBOARD LOGIC ---
+  // Moved up so it can be called immediately
   const fetchLeaderboard = async (currentSpots) => {
-    const { data: profiles } = await supabase.from('profiles').select('username, unlocked_spots, visit_data');
+    // Select more fields to ensure we have data to rank
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select('username, unlocked_spots, visit_data');
+    
     if (profiles) {
       const ranked = profiles.map(p => {
         const streak = p.visit_data?.streak || 0;
@@ -49,11 +28,62 @@ export function useGameLogic(user, showToast) {
           const basePoints = currentSpots[id]?.points || 0;
           return sum + Math.round(basePoints * multiplier);
         }, 0);
-        return { username: p.username || 'Anonymous', score, found: (p.unlocked_spots || []).length, streak };
+        return { 
+          username: p.username || 'Anonymous', 
+          score, 
+          found: (p.unlocked_spots || []).length, 
+          streak 
+        };
       }).sort((a, b) => b.score - a.score);
       setLeaderboard(ranked);
     }
   };
+
+  // --- INITIAL DATA FETCHING ---
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchData = async () => {
+      // 1. Fetch All Spots first (needed for score calculations)
+      const { data: dbSpots } = await supabase.from('spots').select('*');
+      const spotsObj = dbSpots ? dbSpots.reduce((acc, s) => ({ ...acc, [s.id]: s }), {}) : {};
+      setSpots(spotsObj);
+
+      // 2. Fetch or CREATE User Profile (Fixed for new Google/GitHub users)
+      let { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      // If user is new (e.g. Google login), create their profile row automatically
+      if (!profile && !error) {
+        const newProfile = {
+          id: user.id,
+          username: user.user_metadata?.full_name || 'Hunter',
+          unlocked_spots: [],
+          custom_radius: 50
+        };
+        const { data: created } = await supabase.from('profiles').insert([newProfile]).select().single();
+        profile = created;
+      }
+
+      if (profile) {
+        setUnlockedSpots(profile.unlocked_spots || []);
+        setUsername(profile.username || '');
+        setTempUsername(profile.username || '');
+        setShowEmail(profile.show_email ?? false);
+        setLastChange(profile.last_username_change);
+        setVisitData(profile.visit_data || { last_visit: null, streak: 0 });
+        setCustomRadius(profile.custom_radius || 50);
+      }
+      
+      // 3. Always fetch leaderboard even if profile is fresh
+      fetchLeaderboard(spotsObj);
+    };
+    
+    fetchData();
+  }, [user]);
 
   // --- GAMEPLAY ACTIONS ---
   const claimSpot = async (spotId) => {
@@ -81,7 +111,7 @@ export function useGameLogic(user, showToast) {
     if (!error) {
       setUnlockedSpots(newUnlocked);
       setVisitData(newVisitData);
-      fetchLeaderboard(spots);
+      fetchLeaderboard(spots); // Refresh leaderboard after scoring
       showToast(newStreak > 1 ? `Streak Bonus: ${newStreak} Days!` : "Spot Logged!");
     }
   };
@@ -89,6 +119,8 @@ export function useGameLogic(user, showToast) {
   // --- PROFILE ACTIONS ---
   const saveUsername = async () => {
     const cleaned = tempUsername.replace('@', '').trim();
+    if (cleaned.length < 3) return showToast("Name too short", "error");
+
     const { error } = await supabase.from('profiles')
       .update({ username: cleaned, last_username_change: new Date().toISOString() })
       .eq('id', user.id);
@@ -123,13 +155,11 @@ export function useGameLogic(user, showToast) {
   const resetTimer = async () => { 
     const { error } = await supabase.from('profiles')
       .update({ last_username_change: null })
-      .eq('id', user.id); 
+      .eq('id', user.id);  
   
     if (!error) {
       setLastChange(null);
-      showToast("Cooldown Reset! Identity change available.", "success");
-    } else {
-      showToast("Failed to reset timer", "error");
+      showToast("Cooldown Reset!", "success");
     }
   };
 
@@ -139,9 +169,7 @@ export function useGameLogic(user, showToast) {
   
     if (!error) {
       setSpots(prev => ({ ...prev, [id]: { id, ...s } })); 
-      showToast(`${s.name} added to the map!`);
-    } else {
-      showToast("Error adding spot", "error");
+      showToast(`${s.name} added!`);
     }
   };
 

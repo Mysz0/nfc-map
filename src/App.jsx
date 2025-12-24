@@ -165,9 +165,26 @@ export default function App() {
         )}
       </div>
 
-      {/* Bottom Navigation */}
-      <div className={`fixed bottom-0 left-0 right-0 z-[50] transition-all duration-700 cubic-bezier(0.16, 1, 0.3, 1) ${isNavbarShrunk ? 'nav-shrink' : ''}`}>
-        <Navbar activeTab={activeTab} setActiveTab={setActiveTab} isAdmin={isAdmin} colors={colors} />
+      {/* DYNAMIC BOTTOM NAVIGATION WRAPPER */}
+      {/* We added a wrapping div with conditional transforms.
+          - translate-y-[120%] hides it below the screen
+          - scale-90 adds a 'shrinking' effect as it leaves
+          - opacity-0 makes it vanish smoothly
+      */}
+      <div className={`
+        fixed bottom-8 left-0 right-0 z-[5000] px-8
+        transition-all duration-700 cubic-bezier(0.16, 1, 0.3, 1)
+        ${isNavbarShrunk 
+          ? 'translate-y-[120%] opacity-0 scale-95 pointer-events-none' 
+          : 'translate-y-0 opacity-100 scale-100 pointer-events-auto'}
+      `}>
+        <Navbar 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          isAdmin={isAdmin} 
+          colors={colors}
+          isShrunk={isNavbarShrunk} /* Passing the state to Navbar for internal adjustments */
+        />
       </div>
     </div>
   );
