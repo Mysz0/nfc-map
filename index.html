@@ -1,49 +1,27 @@
-// Navbar.jsx
-import React from 'react';
-import { Home, Compass, Trophy, User, Terminal } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <meta name="description" content="Discover locations by scanning NFC tags">
+  
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#09090b">
 
-export default function Navbar({ activeTab, setActiveTab, isAdmin, colors, isShrunk }) {
-  const navItems = [
-    { id: 'home', icon: Home },
-    { id: 'explore', icon: Compass },
-    { id: 'leaderboard', icon: Trophy },
-    { id: 'profile', icon: User },
-    { id: 'dev', icon: Terminal, admin: true },
-  ];
+  <title>SpotHunt - Discover the World</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-  return (
-    // Removed 'fixed bottom-8' - App.jsx will handle positioning
-    <div className="flex justify-center w-full pointer-events-none">
-      <div className={`
-        ${colors.nav} pointer-events-auto backdrop-blur-3xl rounded-[2.5rem] 
-        flex items-center border shadow-2xl shadow-black/20 transition-all duration-700
-        ${isShrunk ? 'p-1 gap-0' : 'p-1.5 gap-1'}
-      `}>
-        {navItems.map((item) => (
-          (!item.admin || isAdmin) && (
-            <button 
-              key={item.id} 
-              onClick={() => setActiveTab(item.id)} 
-              className={`
-                transition-all duration-500 relative flex items-center justify-center rounded-[2rem]
-                ${isShrunk ? 'p-3 px-4' : 'p-4 px-6'}
-                ${activeTab === item.id 
-                  ? 'bg-emerald-500/10 text-emerald-500 scale-105' 
-                  : 'text-zinc-500 hover:text-emerald-500/40'}
-              `}
-            >
-              <item.icon 
-                size={isShrunk ? 18 : 20} 
-                strokeWidth={activeTab === item.id ? 2.5 : 2}
-              />
-              
-              {activeTab === item.id && !isShrunk && (
-                <div className="absolute -bottom-1 w-1 h-1 bg-emerald-500 rounded-full" />
-              )}
-            </button>
-          )
-        ))}
-      </div>
-    </div>
-  );
-}
+  <link rel="manifest" href="/manifest.json" />
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SpotHunt">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/8155/8155010.png">
+
+  <meta name="theme-color" content="#09090b">
+</head>
+<body style="overscroll-behavior: none;">
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>
