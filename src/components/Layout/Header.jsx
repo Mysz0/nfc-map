@@ -3,37 +3,58 @@ import { LogOut } from 'lucide-react';
 
 export default function Header({ isAdmin, username, email, showEmail, isDark, logoutMag, handleLogout }) {
   return (
-    <header className="relative pt-16 pb-32 px-10 rounded-b-[4.5rem] border-b border-white/[0.05] overflow-hidden">
-      <div className="absolute inset-0 mist-overlay z-0" />
-      <div className={`absolute inset-0 ${isDark ? 'bg-zinc-950/40' : 'bg-white/10'} backdrop-blur-3xl z-10`} />
+    <header className="relative pt-16 pb-32 px-10 rounded-b-[4.5rem] border-b border-white/[0.05]">
+      {/* Background elements moved to separate divs to prevent clipping button movement */}
+      <div className="absolute inset-0 mist-overlay z-0 rounded-b-[4.5rem] overflow-hidden" />
+      <div className={`absolute inset-0 ${isDark ? 'bg-zinc-950/40' : 'bg-white/10'} backdrop-blur-3xl z-10 rounded-b-[4.5rem]`} />
       
       <div className="max-w-md mx-auto flex justify-between items-center relative z-20">
-        <div>
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5">
              {isAdmin ? (
-               <span className="text-[7px] font-black tracking-[0.2em] text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">ADMIN ACCESS</span>
+               <span className="text-[7px] font-black tracking-[0.2em] text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 uppercase">Admin Access</span>
              ) : (
                <span className="text-[7px] font-black tracking-[0.2em] text-zinc-500 uppercase">Explorer Mode</span>
              )}
           </div>
-          <h1 className="text-3xl font-bold tracking-tighter italic uppercase leading-none">
+          
+          <h1 className="text-3xl font-bold tracking-tighter italic uppercase leading-none truncate">
             {username || 'Hunter'}<span className="text-emerald-500 font-normal">.</span>
           </h1>
+
+          {/* Email displayed as inactive text under username if enabled */}
           {showEmail && email && (
-            <p className="text-[10px] font-medium text-zinc-500 mt-1 lowercase opacity-60">
+            <p className="text-[10px] font-medium text-zinc-500 mt-1.5 lowercase opacity-60 truncate tracking-wide">
               {email}
             </p>
           )}
         </div>
         
-        <button 
-          ref={logoutMag.ref} onMouseMove={logoutMag.handleMouseMove} onMouseLeave={logoutMag.reset}
-          style={{ transform: `translate(${logoutMag.position.x}px, ${logoutMag.position.y}px)` }}
-          onClick={handleLogout} 
-          className={`p-3.5 rounded-2xl border transition-all duration-300 active:scale-90 z-30 ${isDark ? 'bg-white/[0.03] border-white/[0.05] text-zinc-500' : 'bg-white/80 border-emerald-100 text-emerald-600 shadow-sm'}`}
-        >
-          <LogOut size={18}/>
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Note: This area leaves space for the Floating Theme Switcher 
+              which slides in from App.jsx when at the top.
+          */}
+          <button 
+            ref={logoutMag.ref} 
+            onMouseMove={logoutMag.handleMouseMove} 
+            onMouseLeave={logoutMag.reset}
+            style={{ 
+              transform: `translate(${logoutMag.position.x}px, ${logoutMag.position.y}px)`,
+              /* Smooth spring-back transition that matches the Theme Toggle */
+              transition: logoutMag.position.x === 0 
+                ? 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' 
+                : 'none'
+            }}
+            onClick={handleLogout} 
+            className={`p-3.5 rounded-2xl border transition-all duration-300 ease-out active:scale-90 z-30 shrink-0 ${
+              isDark 
+              ? 'bg-zinc-900/80 border-white/10 text-zinc-500 hover:text-red-400 hover:border-red-400/30' 
+              : 'bg-white/80 border-emerald-100 text-emerald-600 shadow-sm'
+            }`}
+          >
+            <LogOut size={18}/>
+          </button>
+        </div>
       </div>
     </header>
   );
