@@ -2,7 +2,6 @@ import React from 'react';
 import { Sun, Moon } from 'lucide-react';
 
 export default function ThemeToggle({ themeMag, setTheme, isDark, isAtTop }) {
-  // We check if the magnetic effect is active to disable transitions
   const isMagneticActive = themeMag.position.x !== 0 || themeMag.position.y !== 0;
 
   return (
@@ -19,16 +18,12 @@ export default function ThemeToggle({ themeMag, setTheme, isDark, isAtTop }) {
       } ${isAtTop ? 'absolute' : 'fixed'}`}
       
       style={{ 
-        // Positions based on scroll state
-        top: isAtTop ? '4.15rem' : '1.5rem', 
-        right: isAtTop ? '6.8rem' : '1.5rem',
+        // 4.05rem usually aligns perfectly with pt-16 items-center flex rows
+        top: isAtTop ? '4.05rem' : '1.5rem', 
+        right: isAtTop ? '6.85rem' : '1.5rem',
         
-        // Magnetic displacement
         transform: `translate(${themeMag.position.x}px, ${themeMag.position.y}px)`,
         
-        // Disable layout transitions ONLY when the magnet is pulling.
-        // This makes the transition between header and corner smooth, 
-        // but keeps the magnet snappy.
         transition: isMagneticActive 
           ? 'none' 
           : 'all 0.7s cubic-bezier(0.16, 1, 0.3, 1)',

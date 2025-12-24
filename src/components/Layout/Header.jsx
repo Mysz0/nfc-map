@@ -22,7 +22,6 @@ export default function Header({ isAdmin, username, email, showEmail, isDark, lo
             {username || 'Hunter'}<span className="text-emerald-500 font-normal">.</span>
           </h1>
 
-          {/* Absolute Email to prevent layout shifts */}
           <div className="relative h-0">
             {showEmail && email && (
               <p className="absolute top-1 left-0 text-[10px] font-medium text-zinc-500 lowercase opacity-60 truncate tracking-wide w-full">
@@ -32,9 +31,11 @@ export default function Header({ isAdmin, username, email, showEmail, isDark, lo
           </div>
         </div>
         
-        {/* RIGHT: Button Group (ThemeToggle will float into this space) */}
-        <div className="flex items-center gap-3 shrink-0" style={{ width: '88px', justifyContent: 'flex-end' }}>
-          {/* We leave a gap here that ThemeToggle will occupy when isAtTop is true */}
+        {/* RIGHT: Button Group container - Now with a fixed height to lock alignment */}
+        <div className="flex items-center gap-3 shrink-0 h-[46px] relative">
+          {/* Invisible placeholder to keep the Logout button pushed to the right */}
+          <div className="w-[46px]" /> 
+
           <button 
             ref={logoutMag.ref} 
             onMouseMove={logoutMag.handleMouseMove} 
@@ -44,9 +45,9 @@ export default function Header({ isAdmin, username, email, showEmail, isDark, lo
               transform: `translate(${logoutMag.position.x}px, ${logoutMag.position.y}px)`,
               transition: logoutMag.position.x === 0 ? 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none'
             }}
-            className={`p-3.5 rounded-2xl border transition-all duration-300 z-30 ${
+            className={`p-3.5 rounded-2xl border transition-all duration-300 z-30 shrink-0 ${
               isDark 
-              ? 'bg-zinc-900/80 border-white/10 text-zinc-500' 
+              ? 'bg-zinc-900/80 border-white/10 text-zinc-500 hover:text-red-400' 
               : 'bg-white/80 border-emerald-100 text-emerald-600 shadow-sm'
             }`}
           >
