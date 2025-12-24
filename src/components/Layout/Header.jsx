@@ -1,7 +1,7 @@
 import React from 'react';
 import { LogOut } from 'lucide-react';
 
-export default function Header({ isAdmin, username, isDark, logoutMag, handleLogout }) {
+export default function Header({ isAdmin, username, email, showEmail, isDark, logoutMag, handleLogout }) {
   return (
     <header className="relative pt-16 pb-32 px-10 rounded-b-[4.5rem] border-b border-white/[0.05] overflow-hidden">
       <div className="absolute inset-0 mist-overlay z-0" />
@@ -16,9 +16,14 @@ export default function Header({ isAdmin, username, isDark, logoutMag, handleLog
                <span className="text-[7px] font-black tracking-[0.2em] text-zinc-500 uppercase">Explorer Mode</span>
              )}
           </div>
-          <h1 className="text-3xl font-bold tracking-tighter italic uppercase">
+          <h1 className="text-3xl font-bold tracking-tighter italic uppercase leading-none">
             {username || 'Hunter'}<span className="text-emerald-500 font-normal">.</span>
           </h1>
+          {showEmail && email && (
+            <p className="text-[10px] font-medium text-zinc-500 mt-1 lowercase opacity-60">
+              {email}
+            </p>
+          )}
         </div>
         
         <button 

@@ -25,6 +25,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [username, setUsername] = useState('');
   const [tempUsername, setTempUsername] = useState('');
+  const [showEmail, setShowEmail] = useState(false); // New: Email visibility
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
@@ -47,21 +48,17 @@ export default function App() {
     glass: isDark ? 'bg-white/[0.02] backdrop-blur-xl border-white/[0.05]' : 'bg-white/40 backdrop-blur-xl border-white/20'
   };
 
-  // --- SYSTEM EFFECTS ---
+  // --- SYSTEM EFFECTS (Theme & Browser UI Fixes) ---
   useEffect(() => {
     const root = window.document.documentElement;
     
-    // 1. Tailwind Dark Mode
-    if (isDark) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
+    // 1. Tailwind Dark Class
+    isDark ? root.classList.add('dark') : root.classList.remove('dark');
 
-    // 2. Browser System UI (Scrollbars/Forms)
+    // 2. Browser System UI Fix (Scrollbars/Forms)
     root.style.colorScheme = theme;
 
-    // 3. Dynamic Meta Theme Color (Safari/Chrome Address Bar & Overscroll)
+    // 3. Dynamic Meta Theme Color Fix (Safari Overscroll/Address Bar)
     let metaThemeColor = document.querySelector('meta[name="theme-color"]');
     const themeHex = isDark ? '#09090b' : '#f0f4f2';
 
@@ -77,12 +74,14 @@ export default function App() {
 
   useEffect(() => {
     const initApp = async () => {
+      // Fetch Spots
       const { data: dbSpots } = await supabase.from('spots').select('*');
       if (dbSpots) {
         const spotsObj = dbSpots.reduce((acc, s) => ({ ...acc, [s.id]: s }), {});
         setSpots(spotsObj);
         fetchLeaderboard(spotsObj);
       }
+      // Auth Session
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUser(session.user);
@@ -91,6 +90,7 @@ export default function App() {
           setUnlockedSpots(data.unlocked_spots || []);
           setUsername(data.username || '');
           setTempUsername(data.username || '');
+          setShowEmail(data.show_email ?? false); // Load preference
         }
       }
       setLoading(false);
@@ -104,6 +104,7 @@ export default function App() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
+  // Check proximity to any spot
   useEffect(() => {
     if (userLocation && Object.values(spots).length > 0) {
       const nearby = Object.values(spots).some(spot => 
@@ -128,9 +129,19 @@ export default function App() {
 
   const handleLogout = async () => { await supabase.auth.signOut(); window.location.href = '/'; };
 
+  const toggleEmailVisibility = async () => {
+    const newValue = !showEmail;
+    const { error } = await supabase.from('profiles').update({ show_email: newValue }).eq('id', user.id);
+    if (!error) { setShowEmail(newValue); }
+  };
+
   const saveUsername = async () => {
     const cleaned = tempUsername.replace('@', '').trim();
-    const { error } = await supabase.from('profiles').upsert({ id: user.id, username: cleaned });
+    const { error } = await supabase.from('profiles').upsert({ 
+        id: user.id, 
+        username: cleaned,
+        show_email: showEmail 
+    });
     if (!error) { setUsername(cleaned); alert("Profile secured."); fetchLeaderboard(spots); }
   };
 
@@ -148,7 +159,7 @@ export default function App() {
 
   const totalPoints = unlockedSpots.reduce((sum, id) => sum + (spots[id]?.points || 0), 0);
 
-  // --- AUTH & LOADING VIEWS ---
+  // --- AUTH & LOADING VIEWS (Fixed Transitions) ---
   if (loading) return (
     <div className={`min-h-screen ${colors.bg} flex items-center justify-center transition-colors duration-500`}>
       <div className="w-6 h-6 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
@@ -163,15 +174,10 @@ export default function App() {
         className={`fixed top-6 right-6 p-3.5 rounded-2xl border transition-all duration-300 ease-out active:scale-90 z-[10000] ${isDark ? 'bg-zinc-900/80 border-white/10 text-emerald-400' : 'bg-white/80 border-emerald-200 text-emerald-600 shadow-lg backdrop-blur-md'}`}>
         {isDark ? <Sun size={18}/> : <Moon size={18}/>}
       </button>
-
       <div className="w-16 h-16 bg-emerald-500 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-emerald-500/20 rotate-3">
         <MapPin size={32} className="text-white" />
       </div>
-
-      <h1 className={`text-3xl font-bold mb-8 tracking-tight ${colors.text} transition-colors duration-500`}>
-        SpotHunt
-      </h1>
-
+      <h1 className={`text-3xl font-bold mb-8 tracking-tight ${colors.text} transition-colors duration-500`}>SpotHunt</h1>
       <button onClick={() => supabase.auth.signInWithOAuth({ provider: 'github' })} 
         className="bg-emerald-500 text-white px-10 py-4 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all">
         Sign in with GitHub
@@ -195,6 +201,8 @@ export default function App() {
       <Header 
         isAdmin={isAdmin} 
         username={username} 
+        email={user?.email}
+        showEmail={showEmail}
         isDark={isDark} 
         logoutMag={logoutMag} 
         handleLogout={handleLogout} 
@@ -234,6 +242,8 @@ export default function App() {
             tempUsername={tempUsername} 
             setTempUsername={setTempUsername} 
             saveUsername={saveUsername} 
+            showEmail={showEmail}
+            toggleEmailVisibility={toggleEmailVisibility}
             colors={colors} 
             isDark={isDark} 
           />
