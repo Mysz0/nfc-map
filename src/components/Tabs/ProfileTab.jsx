@@ -9,9 +9,13 @@ export default function ProfileTab({
   toggleEmailVisibility, 
   colors, 
   isDark,
-  lastChange // Added this
+  lastChange,
+  user // Added user prop here
 }) {
-  // Logic to show remaining days
+  // Determine provider name (Google, Github, etc.)
+  const provider = user?.app_metadata?.provider || 'account';
+  const providerName = provider.charAt(0).toUpperCase() + provider.slice(1);
+
   const getCooldownInfo = () => {
     if (!lastChange) return null;
     const last = new Date(lastChange).getTime();
@@ -34,36 +38,38 @@ export default function ProfileTab({
           )}
         </div>
         <input 
-          type="text" value={tempUsername} onChange={(e) => setTempUsername(e.target.value)}
+          type="text" 
+          value={tempUsername} 
+          onChange={(e) => setTempUsername(e.target.value)}
           className={`w-full ${isDark ? 'bg-black/20 border-white/10 text-white' : 'bg-white/40 border-emerald-200/50 text-zinc-900'} border rounded-2xl py-5 px-6 font-bold outline-none focus:border-emerald-500 transition-all text-sm`}
           placeholder="Your callsign..."
         />
+        <button 
+          onClick={saveUsername}
+          disabled={!!daysLeft}
+          className={`w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all ${
+            daysLeft 
+            ? 'bg-zinc-500/10 text-zinc-500 cursor-not-allowed' 
+            : 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 active:scale-95'
+          }`}
+        >
+          {daysLeft ? 'Identity Locked' : 'Update Identity'}
+        </button>
       </div>
 
       <div className="flex items-center justify-between px-1">
         <div className="space-y-0.5">
           <p className="text-xs font-bold uppercase tracking-tight">Display Email</p>
-          <p className="text-[10px] text-zinc-500">Show your GitHub contact in header</p>
+          {/* DYNAMIC TEXT HERE */}
+          <p className="text-[10px] text-zinc-500">Show your {providerName} contact in header</p>
         </div>
         <button 
           onClick={toggleEmailVisibility}
-          className={`w-12 h-6 rounded-full transition-all duration-300 relative ${showEmail ? 'bg-emerald-500' : 'bg-zinc-700/50'}`}
+          className={`w-12 h-6 rounded-full transition-all relative ${showEmail ? 'bg-emerald-500' : 'bg-zinc-700'}`}
         >
-          <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-300 ${showEmail ? 'left-7' : 'left-1'}`} />
+          <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${showEmail ? 'left-7' : 'left-1'}`} />
         </button>
       </div>
-
-      <button 
-        onClick={saveUsername} 
-        disabled={daysLeft !== null}
-        className={`w-full py-5 rounded-2xl font-bold shadow-lg transition-all text-sm ${
-          daysLeft 
-          ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed opacity-50' 
-          : 'bg-emerald-500 text-white shadow-emerald-500/20 hover:bg-emerald-600'
-        }`}
-      >
-        {daysLeft ? 'Changes Locked' : 'Apply Changes'}
-      </button>
     </div>
   );
 }

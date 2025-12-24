@@ -47,6 +47,7 @@ export default function App() {
   // High-accuracy location + proximity check
   const { userLocation, mapCenter, isNearSpot, activeSpotId } = useGeoLocation(spots, customRadius);
 
+  // Magnetic refs for the interactive buttons
   const themeMag = useMagnetic();
   const logoutMag = useMagnetic();
 
@@ -82,7 +83,9 @@ export default function App() {
       {/* Visual Feedback Layer */}
       <Toast statusMsg={statusMsg} />
 
-      {/* Floating Theme Switcher */}
+      {/* FLOATING THEME SWITCHER 
+          Handles its own position (Header vs Corner) based on isAtTop 
+      */}
       <ThemeToggle 
         themeMag={themeMag} 
         setTheme={setTheme} 
@@ -90,7 +93,7 @@ export default function App() {
         isAtTop={isAtTop} 
       />
 
-      {/* User Header */}
+      {/* USER HEADER - Logout button stays here, Theme button "lands" next to it */}
       <Header 
         isAdmin={isAdmin} 
         username={username} 
@@ -143,7 +146,8 @@ export default function App() {
             toggleEmailVisibility={toggleEmailVisibility} 
             colors={colors} 
             isDark={isDark} 
-            lastChange={lastChange} 
+            lastChange={lastChange}
+            user={user}
           />
         )}
         
