@@ -33,6 +33,8 @@ export default function App() {
   const [isNearSpot, setIsNearSpot] = useState(false);
   const [mapCenter] = useState([40.730610, -73.935242]);
   const [leaderboard, setLeaderboard] = useState([]);
+  
+  // Refined Scroll state
   const [isAtTop, setIsAtTop] = useState(true);
 
   // --- HELPERS & HOOKS ---
@@ -66,10 +68,10 @@ export default function App() {
     localStorage.setItem('theme', theme);
   }, [theme, isDark]);
 
-  // Precise scroll listener to trigger horizontal dodge
   useEffect(() => {
     const handleScroll = () => {
-      setIsAtTop(window.scrollY < 120);
+      // Threshold 100: Once header starts leaving, we begin the transition
+      setIsAtTop(window.scrollY < 100);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -188,15 +190,17 @@ export default function App() {
   return (
     <div className={`min-h-screen ${colors.bg} ${colors.text} pb-36 transition-colors duration-500 selection:bg-emerald-500/30`}>
       
-      {/* FLOATING THEME TOGGLE 
-          top-16 and right-10 matches the Header's interior button exactly.
-          The -58px transform aligns it perfectly to the left of the Logout button.
+      {/* DYNAMIC THEME TOGGLE: 
+          1. Moves -58px (Left) when Header is visible.
+          2. Stays pinned to top-16 right-10.
+          3. When scrolling down, it stays fixed so it effectively "leaves" the header.
       */}
       <button ref={themeMag.ref} onMouseMove={themeMag.handleMouseMove} onMouseLeave={themeMag.reset}
         style={{ 
           transform: `translate(${themeMag.position.x + (isAtTop ? -58 : 0)}px, ${themeMag.position.y}px)`,
+          /* Transitioning the transform ensures it slides back to the corner smoothly */
           transition: themeMag.position.x === 0 
-            ? 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' 
+            ? 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)' 
             : 'none'
         }}
         onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')} 
