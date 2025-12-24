@@ -1,12 +1,12 @@
 import React from 'react';
-import { Radar, Flame, CheckCircle2, MapPin, Zap, Lock } from 'lucide-react';
+import { Radar, Flame, CheckCircle2, MapPin, Zap, Lock, Search } from 'lucide-react';
 import StatCard from '../Shared/StatCard';
-import { getDistance } from '../../utils/geoUtils'; // Needed to calculate the live distance string
+import { getDistance } from '../../utils/geoUtils';
 
 export default function HomeTab({ 
   isNearSpot, 
-  canClaim,       // NEW: From useGeoLocation
-  userLocation,   // NEW: Needed to calc distance string
+  canClaim, 
+  userLocation, 
   activeSpotId, 
   claimSpot, 
   totalPoints, 
@@ -19,7 +19,6 @@ export default function HomeTab({
 }) {
   const currentSpot = activeSpotId ? spots[activeSpotId] : null;
   
-  // Calculate exact meters for the UI display
   const distance = (userLocation && currentSpot) 
     ? Math.round(getDistance(userLocation.lat, userLocation.lng, currentSpot.lat, currentSpot.lng))
     : null;
@@ -32,12 +31,12 @@ export default function HomeTab({
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
       
-      {/* HEADER SECTION */}
+      {/* HEADER / CLAIM SECTION */}
       <div className="flex flex-col gap-3">
-        {isNearSpot && activeSpotId && (
+        {/* If we have a spot nearby (isNearSpot) OR a spot is active, show the claim UI */}
+        {(isNearSpot && activeSpotId) ? (
           <div className="flex flex-col gap-3 animate-in zoom-in-95 duration-500">
-            <div className="flex items-center gap-3 bg-zinc-500/5 border border-white/5 p-4 rounded-3xl relative overflow-hidden">
-              {/* Distance Badge */}
+            <div className={`flex items-center gap-3 ${colors?.card || 'bg-zinc-900'} border border-white/5 p-4 rounded-3xl relative overflow-hidden`}>
               {distance !== null && !isLoggedToday && (
                 <div className={`absolute top-4 right-4 px-2 py-1 rounded-lg border text-[10px] font-black uppercase tracking-tighter transition-all ${
                   canClaim 
@@ -92,6 +91,16 @@ export default function HomeTab({
                 </>
               )}
             </button>
+          </div>
+        ) : (
+          /* FALLBACK: Show "Scanning" if no spot is in range */
+          <div className={`flex flex-col items-center justify-center p-8 rounded-[2.5rem] border border-white/5 ${colors?.card || 'bg-zinc-900'} opacity-60`}>
+             <div className="relative mb-4">
+                <Search className="text-zinc-500 animate-pulse" size={32} />
+                <div className="absolute inset-0 border-2 border-zinc-500/20 rounded-full animate-ping" />
+             </div>
+             <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">Scanning Area</p>
+             <p className="text-[8px] font-bold text-zinc-600 uppercase mt-1">No active nodes in range</p>
           </div>
         )}
 

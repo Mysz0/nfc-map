@@ -1,23 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Fix for default Leaflet icons
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-
-const DefaultIcon = L.icon({
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41]
-});
-
 function MapController({ coords }) {
   const map = useMap();
   useEffect(() => {
-    // Reverting to your previous logic: Fly to user whenever coords change
     if (coords?.lat && coords?.lng) {
       map.flyTo([coords.lat, coords.lng], 15);
     }
@@ -27,6 +15,7 @@ function MapController({ coords }) {
 
 export default function ExploreTab({ spots = {}, unlockedSpots = [], userLocation, radius }) {
   
+  // 1. BLUE DOT (User)
   const userIcon = L.divIcon({
     className: 'leaflet-user-icon',
     html: `<div class="user-marker-container"><div class="user-pulse-ring"></div><div class="user-marker-core"></div></div>`,
@@ -34,8 +23,15 @@ export default function ExploreTab({ spots = {}, unlockedSpots = [], userLocatio
     iconAnchor: [12, 12]
   });
 
+  // 2. GREEN DOT (Spots)
+  const spotIcon = L.divIcon({
+    className: 'leaflet-spot-icon',
+    html: `<div class="marker-container"><div class="pulse-ring"></div><div class="marker-core"></div></div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12]
+  });
+
   return (
-    /* We force a height here so it CANNOT be 0px */
     <div style={{ height: '70vh', width: '100%', position: 'relative' }} className="rounded-[2.5rem] overflow-hidden border border-white/5 shadow-2xl bg-zinc-950">
       <MapContainer 
         center={[50.0121, 22.6742]} 
@@ -50,6 +46,7 @@ export default function ExploreTab({ spots = {}, unlockedSpots = [], userLocatio
 
         <MapController coords={userLocation} />
 
+        {/* RENDER USER (BLUE DOT) */}
         {userLocation?.lat && (
           <>
             <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
@@ -63,25 +60,31 @@ export default function ExploreTab({ spots = {}, unlockedSpots = [], userLocatio
           </>
         )}
 
+        {/* RENDER SPOTS (GREEN DOTS) */}
         {Object.values(spots).map((spot) => (
           <Marker 
             key={spot.id} 
             position={[spot.lat, spot.lng]} 
-            icon={DefaultIcon}
+            icon={spotIcon} // FIXED: Using spotIcon instead of DefaultIcon
             opacity={unlockedSpots.includes(spot.id) ? 1 : 0.4}
           >
-            <Popup>{spot.name}</Popup>
+            <Popup>
+               <div className="font-bold text-zinc-900">{spot.name}</div>
+               <div className="text-[10px] text-zinc-500 uppercase font-bold">
+                 {unlockedSpots.includes(spot.id) ? 'Secured' : 'Locked'}
+               </div>
+            </Popup>
           </Marker>
         ))}
       </MapContainer>
 
-      {/* Reverting to your previous status overlay style */}
+      {/* OVERLAY PANEL */}
       <div className="absolute bottom-6 left-6 right-6 z-[1000] pointer-events-none">
-        <div className="bg-zinc-950/90 backdrop-blur-xl border border-white/10 p-4 rounded-2xl flex justify-between items-center">
-          <div className="text-white text-[10px] font-bold">
-            {userLocation ? `GPS: ${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}` : 'SCANNING...'}
+        <div className="bg-zinc-950/90 backdrop-blur-xl border border-white/10 p-4 rounded-2xl flex justify-between items-center shadow-2xl">
+          <div className="text-white text-[10px] font-bold tracking-widest uppercase">
+            {userLocation ? `LAT: ${userLocation.lat.toFixed(4)} LNG: ${userLocation.lng.toFixed(4)}` : 'SCANNING GPS...'}
           </div>
-          <div className="text-emerald-500 font-black text-[10px] italic">{radius}M RANGE</div>
+          <div className="text-emerald-500 font-black text-[10px] italic uppercase">{radius}M RANGE</div>
         </div>
       </div>
     </div>
