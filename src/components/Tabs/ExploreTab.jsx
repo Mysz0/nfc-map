@@ -34,7 +34,7 @@ export default function ExploreTab({ spots = {}, unlockedSpots = [], userLocatio
   return (
     <div style={{ height: '70vh', width: '100%', position: 'relative' }} className="rounded-[2.5rem] overflow-hidden border border-white/5 shadow-2xl bg-zinc-950">
       <MapContainer 
-        center={[50.0121, 22.6742]} 
+        center={[0, 0]} 
         zoom={13} 
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
