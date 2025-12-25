@@ -2,6 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* --- THEME VARIABLE ENGINE --- */
+:root {
+  /* Default: Emerald Style */
+  --theme-primary: 16, 185, 129;    /* Emerald 500 */
+  --theme-primary-glow: rgba(16, 185, 129, 0.8);
+  --theme-bg-glass-light: rgba(255, 255, 255, 0.6);
+  --theme-bg-glass-dark: rgba(24, 24, 27, 0.75);
+  --theme-border-light: rgba(16, 185, 129, 0.15);
+  --theme-text-light: #064e3b;
+  --theme-map-bg-light: #f0fdf4;
+  --theme-map-bg-dark: #09090b;
+}
+
+[data-theme='winter'] {
+  /* Hoarfrost Style */
+  --theme-primary: 125, 211, 252;   /* Sky 300 (Icy Blue) */
+  --theme-primary-glow: rgba(186, 230, 253, 0.9);
+  --theme-bg-glass-light: rgba(240, 249, 255, 0.5);
+  --theme-bg-glass-dark: rgba(15, 23, 42, 0.8);    /* Slate 950 */
+  --theme-border-light: rgba(186, 230, 253, 0.4);
+  --theme-text-light: #0c4a6e;      /* Arctic Blue */
+  --theme-map-bg-light: #f0f9ff;
+  --theme-map-bg-dark: #020617;     /* Deep Arctic Night */
+}
+
+/* --- BASE STYLES --- */
 * {
   margin: 0;
   padding: 0;
@@ -10,76 +36,101 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  transition: background-color 0.5s ease;
 }
 
-#root {
-  min-height: 100vh;
+/* --- SMART GLASS UTILITY --- */
+.smart-glass {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: var(--theme-bg-glass-light);
+  border: 1px solid var(--theme-border-light);
+  color: var(--theme-text-light);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* --- LEAFLET MAP & MARKER FIXES --- */
+.dark .smart-glass {
+  background: var(--theme-bg-glass-dark);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+/* Hoarfrost Specific: Adds a crystalline noise texture */
+[data-theme='winter'] .smart-glass {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+/* --- LEAFLET & MAP UI --- */
 .leaflet-container {
   width: 100%;
-  height: 100% !important; 
+  height: 100% !important;
   z-index: 1;
   outline: none;
+  background-color: var(--theme-map-bg-dark) !important;
 }
 
-/* Crucial: Hides default Leaflet square backgrounds for your custom dots */
-.leaflet-marker-icon,
-.leaflet-user-icon,
-.leaflet-spot-icon {
-  border: none !important;
-  background: none !important;
+:not(.dark) .leaflet-container {
+  background-color: var(--theme-map-bg-light) !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: transparent !important;
   box-shadow: none !important;
+  padding: 0 !important;
 }
 
-.leaflet-control-attribution { display: none !important; }
+.leaflet-popup-tip-container { display: none !important; }
 
-/* --- PING MARKERS (GREEN & BLUE) --- */
-.marker-container, .user-marker-container { 
-  position: relative; 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  width: 24px; 
-  height: 24px; 
+.custom-popup-box {
+  @apply smart-glass p-4 rounded-2xl shadow-2xl;
+  min-width: 140px;
+  animation: popup-slide 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Pulse Rings */
-.pulse-ring, .user-pulse-ring { 
-  position: absolute; 
-  width: 100%; 
-  height: 100%; 
-  border-radius: 50%; 
-  animation: marker-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1); 
+@keyframes popup-slide {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
-.pulse-ring { background: rgba(16, 185, 129, 0.4); } /* Emerald */
-.user-pulse-ring { background: rgba(59, 130, 246, 0.4); } /* Blue */
-
-/* Marker Cores */
-.marker-core, .user-marker-core { 
-  position: relative; 
-  border: 2px solid #fff; 
-  border-radius: 50%; 
-  z-index: 2; 
+/* --- MARKERS (Themed Cores) --- */
+.marker-core {
+  width: 10px; height: 10px;
+  background: rgb(var(--theme-primary));
+  box-shadow: 0 0 12px var(--theme-primary-glow);
+  position: relative;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  z-index: 2;
 }
 
-.marker-core { 
-  width: 10px; height: 10px; 
-  background: #10b981; 
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.8); 
+.pulse-ring {
+  background: rgba(var(--theme-primary), 0.4);
+  position: absolute;
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  animation: marker-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
 }
 
-.user-marker-core { 
-  width: 12px; height: 12px; 
-  background: #3b82f6; 
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.8); 
+.user-marker-core {
+  width: 12px; height: 12px;
+  background: #3b82f6;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.8);
+  position: relative;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  z-index: 2;
+}
+
+.user-pulse-ring {
+  background: rgba(59, 130, 246, 0.4);
+  position: absolute;
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  animation: marker-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
 }
 
 @keyframes marker-pulse {
@@ -87,33 +138,16 @@ body {
   100% { transform: scale(2.6); opacity: 0; }
 }
 
-/* --- DYNAMIC UI EFFECTS --- */
-
-/* Mist Overlay for the Header */
+/* --- UI EFFECTS --- */
 .mist-overlay {
-  background: radial-gradient(circle at top, rgba(16, 185, 129, 0.15) 0%, transparent 60%);
-}
-.dark .mist-overlay {
-  background: radial-gradient(circle at top, rgba(16, 185, 129, 0.25) 0%, transparent 60%);
+  background: radial-gradient(circle at top, rgba(var(--theme-primary), 0.15) 0%, transparent 60%);
 }
 
-/* Safari-style Shrink (iOS 26 Style) */
 .nav-shrink {
   transform: scale(0.9) translateY(12px) !important;
   opacity: 0.85;
   filter: blur(0.5px) saturate(1.2);
   transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Streak Flame Glow */
-.flame-glow {
-  filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.4));
-  animation: flame-flicker 3s infinite alternate ease-in-out;
-}
-
-@keyframes flame-flicker {
-  0% { opacity: 0.8; transform: scale(1); }
-  100% { opacity: 1; transform: scale(1.1); }
 }
 
 /* --- ANIMATED BORDERS --- */
@@ -127,22 +161,22 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: 2.2rem; 
-  padding: 2px; 
+  border-radius: 2.2rem;
+  padding: 2px;
   background: linear-gradient(45deg, transparent, transparent);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  transition: all 0.8s ease; 
+  transition: all 0.8s ease;
   opacity: 0;
 }
 
 .collection-card:hover::before {
   opacity: 1;
-  background: linear-gradient(45deg, #10b981, #34d399, transparent, #059669);
+  background: linear-gradient(45deg, rgb(var(--theme-primary)), #fff, transparent, rgb(var(--theme-primary)));
   background-size: 200% 200%;
-  animation: move-gradient 6s linear infinite; 
+  animation: move-gradient 6s linear infinite;
 }
 
 @keyframes move-gradient {
@@ -150,53 +184,15 @@ body {
   100% { background-position: 200% 50%; }
 }
 
-/* --- GLOBAL UTILITIES --- */
+/* --- SCROLLBAR --- */
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(16, 185, 129, 0.2);
+  background: rgba(var(--theme-primary), 0.2);
   border-radius: 10px;
 }
 
-button, a {
-  -webkit-tap-highlight-color: transparent;
-  outline: none;
-}
-
-/* --- SMART GLASS UTILITY --- */
-/* This matches the Profile Identity box transparency exactly */
-.smart-glass {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Light Mode: Soft Frosted Emerald White */
-.smart-glass {
-  background: rgba(255, 255, 255, 0.6);
-  border-color: rgba(16, 185, 129, 0.15);
-  color: #064e3b; /* Deep Emerald */
-}
-
-/* Dark Mode: Deep Frosted Zinc */
-.dark .smart-glass {
-  background: rgba(24, 24, 27, 0.7); /* Zinc 900 at 70% opacity */
-  border-color: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-}
-
-/* Input Specific Adjustments */
-.smart-glass::placeholder {
-  transition: color 0.3s ease;
-}
-
-.smart-glass:focus {
-  border-color: #10b981 !important;
-}
-
-.dark .smart-glass::placeholder {
-  color: rgba(161, 161, 170, 0.4); /* Zinc 400 */
-}
-
-.smart-glass::placeholder {
-  color: rgba(5, 150, 105, 0.4); /* Emerald placeholder for light mode */
+/* Cleaning up Leaflet Icon default styling */
+.leaflet-marker-icon, .leaflet-user-icon, .leaflet-spot-icon {
+  border: none !important;
+  background: none !important;
 }

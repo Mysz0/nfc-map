@@ -27,7 +27,15 @@ export default function App() {
   
   // 2. LOGIC EXTRACTION (Hooks)
   const { user, loading } = useAuth();
-  const { theme, setTheme, isDark, isAtTop, isNavbarShrunk } = useTheme();
+  
+  // Destructured the updated theme hook
+  const { 
+    theme, 
+    setTheme, 
+    isDark, 
+    isAtTop, 
+    isNavbarShrunk 
+  } = useTheme();
   
   const showToast = (text, type = 'success') => {
     setStatusMsg({ text, type });
@@ -54,12 +62,13 @@ export default function App() {
   // 3. UI HELPERS - ROLE BASED
   const isAdmin = userRole === 'admin'; 
   
+  // UPDATED: Using CSS variables from index.css for deep theme integration
   const colors = {
-    bg: isDark ? 'bg-[#09090b]' : 'bg-[#f0f4f2]',
-    card: isDark ? 'bg-zinc-900/40 border-white/[0.03] shadow-2xl' : 'bg-white/70 border-emerald-200/50 shadow-md shadow-emerald-900/5',
-    nav: isDark ? 'bg-zinc-900/80 border-white/[0.05]' : 'bg-white/95 border-emerald-200/60',
-    text: isDark ? 'text-zinc-100' : 'text-zinc-900',
-    glass: isDark ? 'bg-white/[0.02] backdrop-blur-xl border-white/[0.05]' : 'bg-white/40 backdrop-blur-xl border-white/20'
+    bg: isDark ? 'bg-[var(--theme-map-bg-dark)]' : 'bg-[var(--theme-map-bg-light)]',
+    card: 'smart-glass border-white/[0.03] shadow-2xl',
+    nav: 'smart-glass border-white/[0.05]',
+    text: isDark ? 'text-zinc-100' : 'text-[var(--theme-text-light)]',
+    glass: 'smart-glass'
   };
 
   const handleLogout = async () => {
@@ -71,7 +80,8 @@ export default function App() {
   // 4. AUTH & LOADING SCREENS
   if (loading) return (
     <div className={`min-h-screen ${colors.bg} flex items-center justify-center`}>
-      <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      <div className="w-6 h-6 border-2 border-theme-primary border-t-transparent rounded-full animate-spin" 
+           style={{ borderColor: 'rgb(var(--theme-primary))', borderTopColor: 'transparent' }} />
     </div>
   );
 
@@ -80,10 +90,11 @@ export default function App() {
   );
 
   return (
-    <div className={`min-h-screen relative ${colors.bg} ${colors.text} pb-36 transition-colors duration-500`}>
+    <div className={`min-h-screen relative ${colors.bg} ${colors.text} pb-36 transition-all duration-700 ease-in-out`}>
       
       <Toast statusMsg={statusMsg} />
 
+      {/* Theme Toggle remains untouched as per request */}
       <ThemeToggle 
         themeMag={themeMag} 
         setTheme={setTheme} 
@@ -146,6 +157,8 @@ export default function App() {
             isDark={isDark} 
             lastChange={lastChange}
             user={user}
+            appStyle={appStyle}
+            setAppStyle={setAppStyle}
           />
         )}
         
@@ -163,8 +176,8 @@ export default function App() {
             resetTimer={resetTimer} 
             addNewSpot={addNewSpot} 
             deleteSpotFromDB={deleteSpotFromDB}
-            spotStreaks={spotStreaks} // ⭐ ADD THIS
-            updateNodeStreak={updateNodeStreak} // ⭐ ADD THIS - Now streak editor will work!
+            spotStreaks={spotStreaks}
+            updateNodeStreak={updateNodeStreak}
           />
         )}
       </div>

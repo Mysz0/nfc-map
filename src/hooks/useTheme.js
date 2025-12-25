@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 
 export function useTheme() {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+  // New state for Emerald vs Hoarfrost
+  const [appStyle, setAppStyle] = useState(localStorage.getItem('app-style') || 'emerald');
+  
   const [isAtTop, setIsAtTop] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isNavbarShrunk, setIsNavbarShrunk] = useState(false);
@@ -10,32 +13,31 @@ export function useTheme() {
 
   useEffect(() => {
     const root = window.document.documentElement;
+    
+    // Handle Dark Mode Class
     isDark ? root.classList.add('dark') : root.classList.remove('dark');
     root.style.colorScheme = theme;
     localStorage.setItem('theme', theme);
-  }, [theme, isDark]);
+
+    // Handle Visual Style Attribute (Emerald vs Winter)
+    root.setAttribute('data-theme', appStyle);
+    localStorage.setItem('app-style', appStyle);
+  }, [theme, isDark, appStyle]);
 
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-
-      // INCREASED THRESHOLD: 
-      // Your header is tall (pt-16 pb-32). 
-      // 120px is a better sweet spot for mobile so the button only 
-      // detaches when the header is actually moving off-screen.
       if (currentScrollY < 120) {
         setIsAtTop(true);
       } else if (currentScrollY > 140) {
         setIsAtTop(false);
       }
 
-      // Navbar Shrin Logic
       if (currentScrollY > lastScrollY && currentScrollY > 100) {
         setIsNavbarShrunk(true);
       } else if (lastScrollY - currentScrollY > 15 || currentScrollY < 10) {
         setIsNavbarShrunk(false);
       }
-      
       setLastScrollY(currentScrollY);
     };
 
@@ -43,5 +45,6 @@ export function useTheme() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  return { theme, setTheme, isDark, isAtTop, isNavbarShrunk };
+  // Added appStyle and setAppStyle to the return
+  return { theme, setTheme, appStyle, setAppStyle, isDark, isAtTop, isNavbarShrunk };
 }
