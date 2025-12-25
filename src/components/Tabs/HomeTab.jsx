@@ -32,7 +32,6 @@ export default function HomeTab({
   const personalSpotData = activeSpotId ? spotStreaks?.[activeSpotId] : null;
   const isLoggedToday = personalSpotData?.last_claim && new Date(personalSpotData.last_claim).toDateString() === todayStr;
 
-  // Options for our custom select
   const sortOptions = [
     { id: 'ready', label: 'Ready to Sync', icon: Zap },
     { id: 'streak', label: 'Highest Streak', icon: Flame },
@@ -40,9 +39,6 @@ export default function HomeTab({
     { id: 'name', label: 'Alphabetical', icon: Search }
   ];
 
-  const currentSortLabel = sortOptions.find(o => o.id === sortBy)?.label;
-
-  // Close custom select when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (selectRef.current && !selectRef.current.contains(e.target)) setIsSelectOpen(false);
@@ -81,7 +77,8 @@ export default function HomeTab({
       {/* SCANNER SECTION */}
       <div className="flex flex-col gap-3">
         {(isNearSpot && activeSpotId) ? (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 animate-in zoom-in-95 duration-500">
+            {/* LIVE SIGNAL BOX */}
             <div className={`flex items-center gap-3 ${colors?.card || 'bg-zinc-900'} border border-white/5 p-4 rounded-3xl relative overflow-hidden`}>
               <div className={`${isLoggedToday ? 'bg-zinc-800' : canClaim ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'bg-orange-500'} p-2 rounded-xl text-white transition-colors`}>
                 <Radar size={16} className={isLoggedToday ? "" : "animate-pulse"} />
@@ -92,21 +89,55 @@ export default function HomeTab({
                 </p>
                 <p className="text-xs text-zinc-400 truncate font-bold uppercase tracking-tight">{currentSpot?.name}</p>
               </div>
+              
+              {/* DISTANCE ON THE RIGHT */}
+              {distance !== null && !isLoggedToday && (
+                <div className="text-right">
+                   <p className={`text-[10px] font-black uppercase tracking-tighter ${canClaim ? 'text-emerald-500 animate-pulse' : 'text-orange-500'}`}>
+                    {distance}m
+                   </p>
+                   <p className="text-[7px] font-bold text-zinc-600 uppercase">Range</p>
+                </div>
+              )}
             </div>
+
+            {/* ACTION BUTTON */}
             <button 
               disabled={isLoggedToday || !canClaim}
               onClick={() => claimSpot(activeSpotId)}
               className={`w-full py-4 rounded-[2rem] font-black text-sm uppercase transition-all active:scale-95 border ${
-                isLoggedToday ? 'bg-zinc-900/40 border-white/5 text-zinc-700' : 'bg-emerald-500 border-emerald-400 text-zinc-950'
+                isLoggedToday 
+                  ? 'bg-zinc-900/40 border-white/5 text-zinc-700' 
+                  : canClaim 
+                    ? 'bg-emerald-500 border-emerald-400 text-zinc-950 shadow-lg'
+                    : 'bg-zinc-900/60 border-white/10 text-zinc-500 opacity-80'
               }`}
             >
-              {isLoggedToday ? "Logged Today" : canClaim ? "Sync Node" : `Range: ${distance}m`}
+              {isLoggedToday ? (
+                <span className="flex items-center justify-center gap-2"><Lock size={16}/> Logged Today</span>
+              ) : canClaim ? (
+                <span className="flex items-center justify-center gap-2"><Zap size={16} className="fill-current"/> Sync Node</span>
+              ) : (
+                <span className="flex items-center justify-center gap-2 animate-pulse text-zinc-400 uppercase tracking-widest text-[11px]">
+                  Come closer to claim
+                </span>
+              )}
             </button>
           </div>
         ) : (
-          <div className="h-24 flex flex-col items-center justify-center rounded-[2rem] border border-white/5 bg-zinc-900/40 opacity-50">
-             <Search className="text-zinc-700 mb-1" size={20} />
-             <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">Scanning Area...</p>
+          /* SCANNING AREA ANIMATION RESTORED */
+          <div className={`flex flex-col items-center justify-center p-10 rounded-[2.5rem] border border-white/5 ${colors?.card || 'bg-zinc-900'} relative overflow-hidden group`}>
+             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.05)_0%,transparent_70%)] animate-pulse" />
+             <div className="relative mb-4">
+                <Radar className="text-zinc-500 animate-spin-slow" size={32} />
+                <div className="absolute inset-0 border-2 border-emerald-500/20 rounded-full animate-ping scale-150 opacity-0 group-hover:opacity-100" />
+             </div>
+             <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.4em] animate-pulse">Scanning Environment</p>
+             <div className="flex gap-1 mt-2">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className={`w-1 h-1 rounded-full bg-zinc-800 animate-bounce`} style={{ animationDelay: `${i * 0.2}s` }} />
+                ))}
+             </div>
           </div>
         )}
       </div>
@@ -116,19 +147,17 @@ export default function HomeTab({
       {/* SEARCH AND CUSTOM SELECT */}
       <div className="space-y-3 px-1">
         <div className="flex gap-2">
-          {/* Custom Search Input */}
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={14} />
             <input 
               type="text"
-              placeholder="SEARCH..."
+              placeholder="FILTER LOGS..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-zinc-900/80 border border-white/5 rounded-2xl py-3.5 pl-11 pr-4 text-[10px] font-black text-white placeholder:text-zinc-700 focus:outline-none focus:border-emerald-500/50 transition-all"
             />
           </div>
 
-          {/* CUSTOM SELECT DROPDOWN */}
           <div className="relative" ref={selectRef}>
             <button 
               onClick={() => setIsSelectOpen(!isSelectOpen)}
@@ -162,35 +191,39 @@ export default function HomeTab({
 
         {/* NODES LIST */}
         <div className="grid gap-3 pb-24 pt-2">
-          {filteredAndSortedNodes.map(node => {
-            const rank = getNodeRank(node.streakCount);
-            return (
-              <div key={node.id} className="relative group transition-all">
-                {node.isReady && (
-                  <div className="absolute -left-1 top-4 bottom-4 w-1 bg-emerald-500 rounded-full z-10 shadow-[0_0_10px_#10b981]" />
-                )}
-                <div className="bg-zinc-900/80 border border-white/5 p-5 rounded-[2.2rem] flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${rank.bg} ${rank.color}`}>
-                      {node.streakCount >= 10 ? <Trophy size={18} /> : node.streakCount > 1 ? <Flame size={18} fill="currentColor" /> : <CheckCircle2 size={18} />}
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-zinc-200">{node.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className={`text-[9px] font-black uppercase tracking-tighter ${node.isReady ? 'text-emerald-500' : 'text-zinc-600'}`}>
-                          {node.isReady ? 'Sync Required' : 'Secured'}
-                        </span>
-                        {node.streakCount > 1 && <span className="text-[9px] text-zinc-500 font-bold">• STREAK {node.streakCount}x</span>}
+          {filteredAndSortedNodes.length === 0 ? (
+            <div className="p-10 text-center text-[10px] uppercase font-bold opacity-20 tracking-[0.2em]">No encrypted logs found</div>
+          ) : (
+            filteredAndSortedNodes.map(node => {
+              const rank = getNodeRank(node.streakCount);
+              return (
+                <div key={node.id} className="relative group transition-all">
+                  {node.isReady && (
+                    <div className="absolute -left-1 top-4 bottom-4 w-1 bg-emerald-500 rounded-full z-10 shadow-[0_0_10px_#10b981]" />
+                  )}
+                  <div className="bg-zinc-900/80 border border-white/5 p-5 rounded-[2.2rem] flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${rank.bg} ${rank.color}`}>
+                        {node.streakCount >= 10 ? <Trophy size={18} /> : node.streakCount > 1 ? <Flame size={18} fill="currentColor" /> : <CheckCircle2 size={18} />}
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm text-zinc-200">{node.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className={`text-[9px] font-black uppercase tracking-tighter ${node.isReady ? 'text-emerald-500' : 'text-zinc-600'}`}>
+                            {node.isReady ? 'Sync Required' : 'Secured'}
+                          </span>
+                          {node.streakCount > 1 && <span className="text-[9px] text-zinc-500 font-bold">• STREAK {node.streakCount}x</span>}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[11px] font-black text-zinc-400">+{node.points}XP</p>
+                    <div className="text-right">
+                      <p className="text-[11px] font-black text-zinc-400">+{node.points}XP</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
     </div>
