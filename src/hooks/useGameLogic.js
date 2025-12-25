@@ -15,6 +15,27 @@ export function useGameLogic(user, showToast) {
   const [customRadius, setCustomRadius] = useState(250);
   const [leaderboard, setLeaderboard] = useState([]);
 
+  // --- INTERNAL HELPERS ---
+  const getMultiplier = (days) => {
+    if (days >= 10) return 1.5;
+    if (days >= 7) return 1.3;
+    if (days >= 3) return 1.1;
+    return 1.0;
+  };
+
+  const getDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3; // meters
+    const φ1 = lat1 * Math.PI/180;
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lon2-lon1) * Math.PI/180;
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
   const fetchLeaderboard = async () => {
     try {
       const { data: profiles } = await supabase
@@ -92,80 +113,50 @@ export function useGameLogic(user, showToast) {
     fetchData();
   }, [user]);
 
-  // --- HELPER: Get Multiplier Based on Day Count ---
-  const getMultiplier = (days) => {
-    if (days >= 10) return 1.5;
-    if (days >= 7) return 1.3;
-    if (days >= 3) return 1.1;
-    return 1.0;
-  };
+  // --- CORE GAME ACTIONS ---
 
-  const updateNodeStreak = async (spotId, newStreakValue) => {
+  const claimSpot = async (input) => {
     if (!user) return;
-    const safeVal = parseInt(newStreakValue, 10);
-    const finalVal = isNaN(safeVal) ? 0 : Math.max(0, safeVal);
-    
-    const multiplier = getMultiplier(finalVal);
-    const basePoints = spots[spotId]?.points || 0;
-    const currentStreak = spotStreaks?.[spotId]?.streak || 0;
-    
-    let addedPoints = 0;
-    if (finalVal > currentStreak) {
-        addedPoints = Math.floor(basePoints * multiplier);
+    const todayStr = new Date().toDateString();
+    let spotsToClaim = [];
+
+    // Check if input is a Location Object (lat/lng) or a Spot ID (string)
+    if (typeof input === 'object' && input.lat && input.lng) {
+      // Multi-Claim Logic
+      spotsToClaim = Object.values(spots).filter(spot => {
+        const dist = getDistance(input.lat, input.lng, spot.lat, spot.lng);
+        return dist <= (customRadius || 250);
+      });
+    } else if (typeof input === 'string') {
+      // Single-Claim Logic
+      if (spots[input]) spotsToClaim = [spots[input]];
     }
 
-    const updatedStreaks = {
-      ...(spotStreaks || {}),
-      [spotId]: {
-        ...(spotStreaks?.[spotId] || {}),
-        streak: finalVal,
-        last_claim: spotStreaks?.[spotId]?.last_claim || null
-      }
-    };
-    
-    const newTotalPoints = totalPoints + addedPoints;
-    setSpotStreaks(updatedStreaks);
-    setTotalPoints(newTotalPoints);
+    if (spotsToClaim.length === 0) return showToast("No nodes in range", "error");
 
-    const { error } = await supabase.from('profiles')
-      .update({ spot_streaks: updatedStreaks, total_points: newTotalPoints })
-      .eq('id', user.id);
+    let totalEarned = 0;
+    let claimCount = 0;
+    const newUnlocked = [...unlockedSpots];
+    const newSpotStreaks = { ...spotStreaks };
 
-    if (error) {
-      showToast("Sync Failed", "error");
-    } else {
-        showToast(`Streak Set: ${multiplier}x applied`);
-        fetchLeaderboard();
-    }
-  };
+    spotsToClaim.forEach(spot => {
+      const info = newSpotStreaks[spot.id] || { last_claim: null, streak: 0 };
+      if (info.last_claim && new Date(info.last_claim).toDateString() === todayStr) return;
 
-  const claimSpot = async (spotId) => {
-    if (!user || !spots[spotId]) return;
-    const today = new Date();
-    const todayStr = today.toDateString();
-    const currentStreaks = spotStreaks || {};
-    const spotInfo = currentStreaks[spotId] || { last_claim: null, streak: 0 };
+      const nextStreak = (Number(info.streak) || 0) + 1;
+      const multiplier = getMultiplier(nextStreak);
+      const earned = Math.floor((spot.points || 0) * multiplier);
 
-    if (spotInfo.last_claim && new Date(spotInfo.last_claim).toDateString() === todayStr) {
-      return showToast("Already logged today", "error");
-    }
+      totalEarned += earned;
+      claimCount++;
 
-    const basePoints = spots[spotId].points || 0;
-    const nextStreak = (Number(spotInfo.streak) || 0) + 1;
-    const multiplier = getMultiplier(nextStreak);
+      if (!newUnlocked.includes(spot.id)) newUnlocked.push(spot.id);
+      newSpotStreaks[spot.id] = { last_claim: new Date().toISOString(), streak: nextStreak };
+    });
 
-    const earnedPoints = Math.floor(basePoints * multiplier);
-    const newTotalPoints = (totalPoints || 0) + earnedPoints;
-    const newUnlocked = unlockedSpots.includes(spotId) ? unlockedSpots : [...unlockedSpots, spotId];
-    
-    const newSpotStreaks = { 
-      ...currentStreaks, 
-      [spotId]: { 
-        last_claim: today.toISOString(), 
-        streak: nextStreak 
-      } 
-    };
+    if (claimCount === 0) return showToast("Nodes already secured today", "error");
 
+    const newTotalPoints = (totalPoints || 0) + totalEarned;
     const { error } = await supabase.from('profiles').update({ 
       unlocked_spots: newUnlocked, 
       spot_streaks: newSpotStreaks,
@@ -176,11 +167,37 @@ export function useGameLogic(user, showToast) {
       setUnlockedSpots(newUnlocked);
       setSpotStreaks(newSpotStreaks);
       setTotalPoints(newTotalPoints);
-      
-      const multiplierText = multiplier > 1 ? ` (${multiplier}x streak!)` : "";
-      showToast(`+${earnedPoints} pts${multiplierText}`);
+      showToast(`Secured ${claimCount} nodes: +${totalEarned} XP!`);
       fetchLeaderboard();
     }
+  };
+
+  const updateNodeStreak = async (spotId, newStreakValue) => {
+    if (!user) return;
+    const finalVal = Math.max(0, parseInt(newStreakValue, 10) || 0);
+    const multiplier = getMultiplier(finalVal);
+    const currentStreak = spotStreaks?.[spotId]?.streak || 0;
+    
+    let addedPoints = 0;
+    if (finalVal > currentStreak) {
+        addedPoints = Math.floor((spots[spotId]?.points || 0) * multiplier);
+    }
+
+    const updatedStreaks = {
+      ...(spotStreaks || {}),
+      [spotId]: { ...spotStreaks?.[spotId], streak: finalVal }
+    };
+    
+    const newTotalPoints = totalPoints + addedPoints;
+    setSpotStreaks(updatedStreaks);
+    setTotalPoints(newTotalPoints);
+
+    await supabase.from('profiles')
+      .update({ spot_streaks: updatedStreaks, total_points: newTotalPoints })
+      .eq('id', user.id);
+    
+    showToast(`Streak Set: ${multiplier}x applied`);
+    fetchLeaderboard();
   };
 
   const removeSpot = async (id) => {
@@ -217,8 +234,6 @@ export function useGameLogic(user, showToast) {
         return n;
       });
       showToast("Global Purge Success");
-    } else {
-      showToast("Delete blocked by database rules", "error");
     }
   };
 
@@ -230,47 +245,19 @@ export function useGameLogic(user, showToast) {
   const saveUsername = async () => {
     const cleaned = tempUsername.trim();
     if (!cleaned || cleaned === username) return;
-
-    const { data: reserved } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('username', cleaned)
-      .not('id', 'eq', user.id)
-      .maybeSingle();
-
-    if (reserved) {
-      return showToast("Identity already reserved by another operative", "error");
-    }
+    const { data: reserved } = await supabase.from('profiles').select('username').eq('username', cleaned).not('id', 'eq', user.id).maybeSingle();
+    if (reserved) return showToast("Identity already reserved", "error");
 
     const now = new Date().toISOString();
-    const { error } = await supabase
-      .from('profiles')
-      .update({ username: cleaned, last_username_change: now })
-      .eq('id', user.id);
-
-    if (!error) {
-      setUsername(cleaned);
-      setLastChange(now);
-      showToast("Identity Synchronized");
-      fetchLeaderboard();
-    } else {
-      showToast("Update failed", "error");
-    }
+    const { error } = await supabase.from('profiles').update({ username: cleaned, last_username_change: now }).eq('id', user.id);
+    if (!error) { setUsername(cleaned); setLastChange(now); showToast("Identity Synchronized"); fetchLeaderboard(); }
   };
 
   const resetTimer = async () => {
     if (!user) return;
-    const { error } = await supabase
-      .from('profiles')
-      .update({ last_username_change: null })
-      .eq('id', user.id);
-
-    if (!error) {
-      setLastChange(null);
-      showToast("Cooldown Bypassed: Instant Change Ready");
-    } else {
-      showToast("Override failed", "error");
-    }
+    await supabase.from('profiles').update({ last_username_change: null }).eq('id', user.id);
+    setLastChange(null);
+    showToast("Cooldown Bypassed");
   };
 
   const toggleEmailVisibility = async () => {
