@@ -7,12 +7,18 @@ export function useGeoLocation(spots, customRadius, spotStreaks = {}) {
   const [mapCenter] = useState([50.0121, 22.6742]);
 
   useEffect(() => {
-    const detectionRange = customRadius || 250;
+    // 1. HARDCODED SECURITY LIMITS
+    const CLAIM_RANGE = 20; // Meters (Locked for security)
+    const DETECTION_RANGE = customRadius || 250; // Visual radius for Home Screen appearance
     const todayStr = new Date().toDateString();
 
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
-        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        // 2. SHAKE-PROOFING: Rounding to 6 decimal places removes GPS micro-jitter
+        const coords = { 
+          lat: Math.round(pos.coords.latitude * 1000000) / 1000000, 
+          lng: Math.round(pos.coords.longitude * 1000000) / 1000000 
+        };
         setUserLocation(coords);
 
         let readySpot = null;
@@ -28,16 +34,14 @@ export function useGeoLocation(spots, customRadius, spotStreaks = {}) {
           const streakInfo = spotStreaks[spot.id];
           const isLoggedToday = streakInfo?.last_claim && new Date(streakInfo.last_claim).toDateString() === todayStr;
 
-          // 1. DYNAMIC DETECTION
-          if (dist <= detectionRange) {
+          // 3. DETECTION LOGIC (Shows the node in the Home Tab)
+          if (dist <= DETECTION_RANGE) {
             if (!isLoggedToday) {
-              // Track the closest node that NEEDS sync
               if (dist < closestReadyDist) {
                 closestReadyDist = dist;
                 readySpot = spot.id;
               }
             } else {
-              // Track the closest node even if it's already secured
               if (dist < closestSecuredDist) {
                 closestSecuredDist = dist;
                 securedSpot = spot.id;
@@ -45,16 +49,14 @@ export function useGeoLocation(spots, customRadius, spotStreaks = {}) {
             }
           }
 
-          // 2. CLAIM RANGE
-          // We only allow claiming if the closest node in range is actually ready
-          if (dist <= 10 && !isLoggedToday) {
+          // 4. CLAIM LOGIC (Locked to 20m)
+          // Even if DETECTION_RANGE is huge, button only works within 20m
+          if (dist <= CLAIM_RANGE && !isLoggedToday) {
             foundClaimable = true;
           }
         });
 
-        // PRIORITY LOGIC: 
-        // Always show the Ready spot if one is in range. 
-        // If not, show the Secured spot.
+        // Determine which spot UI should focus on
         const activeId = readySpot || securedSpot;
 
         setProximity({ 
@@ -70,8 +72,9 @@ export function useGeoLocation(spots, customRadius, spotStreaks = {}) {
         timeout: 5000 
       }
     );
+
     return () => navigator.geolocation.clearWatch(watchId);
-  }, [spots, customRadius, spotStreaks]); // Added spotStreaks to dependency array
+  }, [spots, customRadius, spotStreaks]);
 
   return { 
     userLocation, 

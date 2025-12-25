@@ -96,10 +96,16 @@ export default function HomeTab({
               
               {distance !== null && !isLoggedToday && (
                 <div className="text-right">
-                   <p className={`text-[11px] font-black uppercase tracking-tighter ${canClaim ? 'text-[rgb(var(--theme-primary))]' : 'text-orange-500'}`}>
+                  <p className={`text-[11px] font-black uppercase tracking-tighter ${
+                    canClaim 
+                      ? 'text-[rgb(var(--theme-primary))]' 
+                      : (isDark ? 'opacity-50' : 'text-zinc-400')
+                  }`}>
                     {distance}m
-                   </p>
-                   <p className="text-[7px] font-bold opacity-50 uppercase">Range</p>
+                  </p>
+                  <p className={`text-[7px] font-bold uppercase ${isDark ? 'opacity-50' : 'text-zinc-400'}`}>
+                    Range
+                  </p>
                 </div>
               )}
             </div>
