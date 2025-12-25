@@ -98,7 +98,19 @@ export function useGameLogic(user, showToast) {
       return showToast("Already logged today", "error");
     }
 
-    const earnedPoints = spots[spotId].points || 0;
+    // --- NEW MULTIPLIER LOGIC ---
+    const basePoints = spots[spotId].points || 0;
+    const currentStreakCount = Number(spotInfo.streak) || 0;
+    const nextStreak = currentStreakCount + 1;
+
+    let multiplier = 1.0;
+    if (nextStreak === 2) multiplier = 1.1;
+    else if (nextStreak === 3) multiplier = 1.3;
+    else if (nextStreak >= 4) multiplier = 1.5;
+
+    const earnedPoints = Math.floor(basePoints * multiplier);
+    // ----------------------------
+
     const newTotalPoints = (totalPoints || 0) + earnedPoints;
     const newUnlocked = unlockedSpots.includes(spotId) ? unlockedSpots : [...unlockedSpots, spotId];
     
@@ -106,7 +118,7 @@ export function useGameLogic(user, showToast) {
       ...currentStreaks, 
       [spotId]: { 
         last_claim: today.toISOString(), 
-        streak: (Number(spotInfo.streak) || 0) + 1 
+        streak: nextStreak 
       } 
     };
 
@@ -120,7 +132,11 @@ export function useGameLogic(user, showToast) {
       setUnlockedSpots(newUnlocked);
       setSpotStreaks(newSpotStreaks);
       setTotalPoints(newTotalPoints);
-      showToast(`+${earnedPoints} pts!`);
+      
+      // Show the multiplier in the toast so you know it worked!
+      const multiplierText = multiplier > 1 ? ` (${multiplier}x streak!)` : "";
+      showToast(`+${earnedPoints} pts${multiplierText}`);
+      
       fetchLeaderboard();
     }
   };
