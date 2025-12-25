@@ -52,9 +52,48 @@ export function useGameLogic(user, showToast) {
           setTotalPoints(profile.total_points || 0);
           setShowEmail(profile.show_email ?? false);
           setLastChange(profile.last_username_change);
-          setVisitData(profile.visit_data || { last_visit: null, streak: 0 });
           setSpotStreaks(profile.spot_streaks || {});
           setCustomRadius(profile.custom_radius || 250);
+
+          // --- GLOBAL STREAK UPDATE LOGIC ---
+          const now = new Date();
+          const todayStr = now.toDateString();
+          const dbVisitData = profile.visit_data || { last_visit: null, streak: 0 };
+          
+          let newStreak = dbVisitData.streak || 0;
+          const lastVisitDate = dbVisitData.last_visit ? new Date(dbVisitData.last_visit) : null;
+
+          if (!lastVisitDate) {
+            newStreak = 1;
+          } else {
+            const lastVisitStr = lastVisitDate.toDateString();
+            
+            if (lastVisitStr !== todayStr) {
+              const yesterday = new Date();
+              yesterday.setDate(yesterday.getDate() - 1);
+              
+              if (lastVisitStr === yesterday.toDateString()) {
+                newStreak += 1;
+              } else {
+                newStreak = 1; // Reset if they missed a day
+              }
+            }
+          }
+
+          // If it's a new day, update Supabase
+          if (!lastVisitDate || lastVisitDate.toDateString() !== todayStr) {
+            const updatedVisit = { last_visit: now.toISOString(), streak: newStreak };
+            setVisitData(updatedVisit);
+            
+            await supabase.from('profiles')
+              .update({ visit_data: updatedVisit })
+              .eq('id', user.id);
+            
+            showToast(`${newStreak} Day Streak Active!`);
+          } else {
+            setVisitData(dbVisitData);
+          }
+          // -----------------------------------
         }
         fetchLeaderboard();
       } catch (err) { console.error(err); }
@@ -104,7 +143,7 @@ export function useGameLogic(user, showToast) {
     if (error) {
       showToast("Sync Failed", "error");
     } else {
-        showToast(`Streak updated: ${multiplier}x active`);
+        showToast(`Streak: ${multiplier}x Multiplier`);
         fetchLeaderboard();
     }
   };
@@ -157,16 +196,12 @@ export function useGameLogic(user, showToast) {
     }
   };
 
-  // --- UPDATED: XP Stays Permanent on Removal ---
   const removeSpot = async (id) => {
     if (!user) return;
-    
-    // 1. Keep points as they are (Experience Points logic)
     const newUnlocked = (unlockedSpots || []).filter(x => x !== id);
     const newSpotStreaks = { ...(spotStreaks || {}) };
     delete newSpotStreaks[id];
 
-    // 2. Update Supabase without subtracting total_points
     const { error } = await supabase.from('profiles').update({ 
       unlocked_spots: newUnlocked, 
       spot_streaks: newSpotStreaks
@@ -175,9 +210,8 @@ export function useGameLogic(user, showToast) {
     if (!error) {
       setUnlockedSpots(newUnlocked);
       setSpotStreaks(newSpotStreaks);
-      // setTotalPoints remains unchanged
       fetchLeaderboard();
-      showToast("Inventory Cleared (XP Retained)");
+      showToast("Node Cleared (XP Saved)");
     }
   };
 
