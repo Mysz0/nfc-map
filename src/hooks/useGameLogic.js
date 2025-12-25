@@ -62,10 +62,26 @@ export function useGameLogic(user, showToast) {
     fetchData();
   }, [user]);
 
+  // --- FIXED: Multiplier Logic for Manual Streak Updates ---
   const updateNodeStreak = async (spotId, newStreakValue) => {
     if (!user) return;
     const safeVal = parseInt(newStreakValue, 10);
     const finalVal = isNaN(safeVal) ? 0 : Math.max(0, safeVal);
+    
+    // Calculate Multiplier for the current/new streak
+    let multiplier = 1.0;
+    if (finalVal === 2) multiplier = 1.1;
+    else if (finalVal === 3) multiplier = 1.3;
+    else if (finalVal >= 4) multiplier = 1.5;
+
+    const basePoints = spots[spotId]?.points || 0;
+    const currentStreak = spotStreaks?.[spotId]?.streak || 0;
+    
+    // Calculate point difference if increasing
+    let addedPoints = 0;
+    if (finalVal > currentStreak) {
+        addedPoints = Math.floor(basePoints * multiplier);
+    }
 
     const updatedStreaks = {
       ...(spotStreaks || {}),
@@ -76,14 +92,25 @@ export function useGameLogic(user, showToast) {
       }
     };
     
+    const newTotalPoints = totalPoints + addedPoints;
+
+    // Optimistic UI Update
     setSpotStreaks(updatedStreaks);
+    setTotalPoints(newTotalPoints);
+
     const { error } = await supabase.from('profiles')
-      .update({ spot_streaks: updatedStreaks })
+      .update({ 
+        spot_streaks: updatedStreaks,
+        total_points: newTotalPoints 
+      })
       .eq('id', user.id);
 
     if (error) {
       console.error("Streak save error:", error);
       showToast("Sync Failed", "error");
+    } else {
+        showToast(`Streak updated: ${multiplier}x active`);
+        fetchLeaderboard();
     }
   };
 
@@ -98,10 +125,8 @@ export function useGameLogic(user, showToast) {
       return showToast("Already logged today", "error");
     }
 
-    // --- NEW MULTIPLIER LOGIC ---
     const basePoints = spots[spotId].points || 0;
-    const currentStreakCount = Number(spotInfo.streak) || 0;
-    const nextStreak = currentStreakCount + 1;
+    const nextStreak = (Number(spotInfo.streak) || 0) + 1;
 
     let multiplier = 1.0;
     if (nextStreak === 2) multiplier = 1.1;
@@ -109,8 +134,6 @@ export function useGameLogic(user, showToast) {
     else if (nextStreak >= 4) multiplier = 1.5;
 
     const earnedPoints = Math.floor(basePoints * multiplier);
-    // ----------------------------
-
     const newTotalPoints = (totalPoints || 0) + earnedPoints;
     const newUnlocked = unlockedSpots.includes(spotId) ? unlockedSpots : [...unlockedSpots, spotId];
     
@@ -133,10 +156,8 @@ export function useGameLogic(user, showToast) {
       setSpotStreaks(newSpotStreaks);
       setTotalPoints(newTotalPoints);
       
-      // Show the multiplier in the toast so you know it worked!
       const multiplierText = multiplier > 1 ? ` (${multiplier}x streak!)` : "";
       showToast(`+${earnedPoints} pts${multiplierText}`);
-      
       fetchLeaderboard();
     }
   };
@@ -189,45 +210,37 @@ export function useGameLogic(user, showToast) {
     if (!error) { setCustomRadius(v); showToast(`Radius: ${v}m`); }
   };
 
-  // --- UPDATED: Save Username with Reserved Check & Toast Engine ---
   const saveUsername = async () => {
     const cleaned = tempUsername.trim();
     if (!cleaned || cleaned === username) return;
 
-    // 1. Check if name is taken by anyone else
     const { data: reserved } = await supabase
       .from('profiles')
       .select('username')
       .eq('username', cleaned)
-      .not('id', 'eq', user.id) // Crucial: don't check against yourself
+      .not('id', 'eq', user.id)
       .maybeSingle();
 
     if (reserved) {
-      // Triggers red Error Toast
       return showToast("Identity already reserved by another operative", "error");
     }
 
-    // 2. Perform Update with 7-day timestamp
     const now = new Date().toISOString();
     const { error } = await supabase
       .from('profiles')
-      .update({ 
-        username: cleaned, 
-        last_username_change: now 
-      })
+      .update({ username: cleaned, last_username_change: now })
       .eq('id', user.id);
 
     if (!error) {
       setUsername(cleaned);
       setLastChange(now);
-      showToast("Identity Synchronized"); // Triggers green Success Toast
+      showToast("Identity Synchronized");
       fetchLeaderboard();
     } else {
       showToast("Update failed", "error");
     }
   };
 
-  // --- UPDATED: Functional Admin Reset ---
   const resetTimer = async () => {
     if (!user) return;
     const { error } = await supabase
