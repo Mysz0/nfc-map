@@ -45,7 +45,7 @@ export default function App() {
   } = useGameLogic(user, showToast);
 
   // High-accuracy location + proximity check
-  const { userLocation, mapCenter, isNearSpot, canClaim, activeSpotId } = useGeoLocation(spots, customRadius);
+  const { userLocation, mapCenter, isNearSpot, canClaim, activeSpotId } = useGeoLocation(spots, customRadius, spotStreaks);
 
   // Magnetic refs for the interactive buttons
   const themeMag = useMagnetic();
