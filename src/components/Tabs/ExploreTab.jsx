@@ -65,8 +65,8 @@ export default function ExploreTab({ spots = {}, unlockedSpots = [], userLocatio
         <div class="marker-core ${isUnlocked ? 'core-green' : ''}"></div>
       </div>`,
     iconSize: [20, 20], 
-    iconAnchor: [10, 10] // Centered
-  }), []);
+    iconAnchor: [10, 10]
+  });
 
   return (
     <div 
