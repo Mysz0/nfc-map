@@ -9,25 +9,46 @@ export function useGameLogic(user, showToast) {
 
   const fetchLeaderboard = async () => {
     try {
-      // CORRECTED: Removed deleted columns 'unlocked_spots' and 'visit_data'
-      // These now live in separate tables, so we fetch the base profile stats here.
-      const { data: profiles, error } = await supabase
+      // 1. Fetch profiles for base stats (Username/XP)
+      const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select('username, total_points')
+        .select('id, username, total_points')
         .order('total_points', { ascending: false })
         .limit(50);
       
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // 2. Fetch all claims to calculate "Nodes Secured" count
+      const { data: allClaims, error: claimsError } = await supabase
+        .from('user_spots')
+        .select('user_id');
+
+      if (claimsError) throw claimsError;
+
+      // 3. Fetch all streaks from your new table
+      const { data: allStreaks, error: streaksError } = await supabase
+        .from('user_streaks')
+        .select('user_id, streak_count');
+
+      if (streaksError) throw streaksError;
 
       if (profiles) {
-        setLeaderboard(profiles.map(p => ({ 
-          username: p.username || 'Anonymous', 
-          score: p.total_points || 0, 
-          // Note: Since these are in other tables now, we default to 0 
-          // to prevent UI crashes. You can add joins later if needed.
-          found: 0, 
-          streak: 0 
-        })));
+        const mappedLeaderboard = profiles.map(p => {
+          // Count how many times this user appears in user_spots
+          const nodesFound = allClaims.filter(c => c.user_id === p.id).length;
+          
+          // Find the streak for this user
+          const userStreak = allStreaks.find(s => s.user_id === p.id)?.streak_count || 0;
+
+          return { 
+            username: p.username || 'Anonymous', 
+            score: p.total_points || 0, 
+            found: nodesFound, // FIXED: Now shows real count (e.g., 5)
+            streak: userStreak  // FIXED: Now shows real streak in leaderboard
+          };
+        });
+
+        setLeaderboard(mappedLeaderboard);
       }
     } catch (err) { 
       console.error("Leaderboard fetch error:", err.message); 
@@ -35,11 +56,9 @@ export function useGameLogic(user, showToast) {
   };
 
   // 1. Initialize Profile Logic
-  // This hook handles 'visitData' and 'username'
   const profile = useProfile(user, showToast, fetchLeaderboard);
 
   // 2. Initialize Spot Logic 
-  // This hook handles 'spots', 'unlockedSpots', and 'claimSpot'
   const spots = useSpots(
     user, 
     showToast, 
@@ -68,9 +87,9 @@ export function useGameLogic(user, showToast) {
   }, [user]);
 
   return {
-    ...profile, // Returns visitData (for the streak icon), username, etc.
-    ...spots,   // Returns spots, unlockedSpots, claimSpot
-    ...admin,   // Returns admin functions
+    ...profile,
+    ...spots,
+    ...admin,
     leaderboard,
     fetchLeaderboard
   };

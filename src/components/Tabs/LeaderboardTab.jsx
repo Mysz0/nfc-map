@@ -34,6 +34,7 @@ export default function LeaderboardTab({ leaderboard, username, colors }) {
                 }`}>
                   @{entry.username} {isCurrentUser && '(YOU)'}
                 </p>
+                {/* RESTORED: Using entry.found which represents the count of secured nodes */}
                 <p className="text-[9px] text-[rgb(var(--theme-primary))] font-bold uppercase tracking-widest opacity-80">
                   {entry.found} Nodes Secured
                 </p>
@@ -41,7 +42,7 @@ export default function LeaderboardTab({ leaderboard, username, colors }) {
             </div>
 
             <div className="flex items-center gap-4">
-              {/* STREAK COLUMN */}
+              {/* NEW: Global Streak (Compact) */}
               {entry.streak > 0 && (
                 <div className="flex flex-col items-center opacity-80">
                    <Flame size={12} className="text-orange-500 fill-orange-500/20" />
@@ -49,7 +50,7 @@ export default function LeaderboardTab({ leaderboard, username, colors }) {
                 </div>
               )}
 
-              {/* SCORE COLUMN */}
+              {/* XP SCORE */}
               <div className="text-right min-w-[60px]">
                 <p className={`text-sm font-black tracking-tighter ${
                   isCurrentUser ? 'text-[rgb(var(--theme-primary))]' : ''
