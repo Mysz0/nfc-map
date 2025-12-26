@@ -83,7 +83,7 @@ export function useGameLogic(user, showToast) {
     ...profile, 
     ...spots, 
     ...admin,
-    ...store, // Spreads shopItems, inventory, buyItem, activateItem
+    ...store, 
     handleVote, 
     leaderboard, 
     fetchLeaderboard 

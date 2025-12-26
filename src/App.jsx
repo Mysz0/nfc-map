@@ -53,10 +53,10 @@ export default function App() {
     removeSpot, resetTimer, addNewSpot, deleteSpotFromDB,
     updateNodeStreak,
     handleVote,
-    // FIXED: Added these to destructuring so they exist in this scope
     shopItems,
     inventory,
     buyItem,
+    activateItem,
     customRadius,      
     claimRadius,       
     updateRadius,      
@@ -66,7 +66,7 @@ export default function App() {
   } = useGameLogic(user, showToast);
 
   // High-accuracy location + proximity check (Dynamic thresholds from DB)
-  const { userLocation, mapCenter, isNearSpot, canClaim, activeSpotId } = useGeoLocation(
+  const { userLocation, mapCenter, isNearSpot, canClaim, activeSpotId, radiusBonus } = useGeoLocation(
     user,
     spots, 
     customRadius, 
