@@ -21,10 +21,9 @@
 [data-theme='winter'] {
   --theme-primary: 125, 211, 252;
   --theme-primary-glow: rgba(186, 230, 253, 0.9);
-  /* Slightly more opaque for the frost effect */
   --theme-bg-glass-light: rgba(240, 249, 255, 0.75);
   --theme-bg-glass-dark: rgba(7, 18, 38, 0.85);
-  --theme-border-light: rgba(255, 255, 255, 0.4);
+  --theme-border-light: rgba(255, 255, 255, 0.5);
   --theme-text-title-light: #0c4a6e;
   --theme-text-title-dark: #f0f9ff; 
   --theme-text-light: #0c4a6e;
@@ -62,6 +61,8 @@ body {
   color: var(--theme-text-title-light);
   position: relative;
   overflow: hidden;
+  /* Prevents child elements or animations from leaking out */
+  isolation: isolate;
 }
 
 .dark .smart-glass {
@@ -70,43 +71,39 @@ body {
   color: var(--theme-text-title-dark) !important; 
 }
 
-/* --- WINTER FROST EFFECT (REPLACES GRAIN) --- */
+/* --- WINTER THEME: FROSTED ICE (GLITCH-FREE) --- */
 [data-theme='winter'] .smart-glass {
-  /* No more noise filter - using a frosted ice gradient */
+  /* Replace noise with a clean ice-blue specular gradient */
   background-image: linear-gradient(
     135deg, 
-    rgba(255, 255, 255, 0.3) 0%, 
-    rgba(255, 255, 255, 0) 50%
-  );
-  backdrop-filter: blur(20px) saturate(120%);
-  -webkit-backdrop-filter: blur(20px) saturate(120%);
-  border-color: rgba(255, 255, 255, 0.5);
-  box-shadow: inset 0 0 20px rgba(125, 211, 252, 0.15);
+    rgba(255, 255, 255, 0.4) 0%, 
+    rgba(240, 249, 255, 0.2) 50%, 
+    rgba(186, 230, 253, 0.1) 100%
+  ) !important;
+  
+  /* Deeper blur for ice texture */
+  backdrop-filter: blur(20px) saturate(125%);
+  -webkit-backdrop-filter: blur(20px) saturate(125%);
+  
+  /* Stronger white border for frosty edges */
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  
+  /* Inner glow to simulate depth */
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    inset 0 0 15px rgba(125, 211, 252, 0.1);
 }
 
-/* Shimmering ice light-hit effect */
-[data-theme='winter'] .smart-glass::before {
-  content: "";
-  position: absolute;
-  inset: 0;
+.dark[data-theme='winter'] .smart-glass {
   background: linear-gradient(
-    45deg,
-    transparent 20%,
-    rgba(255, 255, 255, 0.15) 50%,
-    transparent 80%
-  );
-  background-size: 250% 250%;
-  pointer-events: none;
-  animation: ice-glint 10s infinite ease-in-out;
+    135deg, 
+    rgba(15, 23, 42, 0.85) 0%, 
+    rgba(30, 41, 59, 0.75) 100%
+  ) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
 }
 
-@keyframes ice-glint {
-  0% { background-position: -100% -100%; }
-  50% { background-position: 100% 100%; }
-  100% { background-position: -100% -100%; }
-}
-
-/* --- LEAFLET & POPUPS --- */
+/* --- LEAFLET & MAP UI --- */
 .leaflet-control-attribution, .leaflet-control-zoom { display: none !important; }
 .leaflet-container {
   width: 100% !important;
@@ -124,8 +121,6 @@ body {
   box-shadow: none !important;
   padding: 0 !important;
 }
-
-.leaflet-popup-tip-container { display: none !important; }
 
 /* --- MARKERS --- */
 .marker-core {
