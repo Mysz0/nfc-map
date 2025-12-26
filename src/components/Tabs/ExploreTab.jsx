@@ -4,7 +4,6 @@ import { Target } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// --- UTILS ---
 function getDistance(lat1, lon1, lat2, lon2) {
   const R = 6371e3;
   const φ1 = lat1 * Math.PI / 180;
@@ -17,7 +16,6 @@ function getDistance(lat1, lon1, lat2, lon2) {
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
-// --- MAP UI CONTROLS ---
 function MapInterface({ coords, stableUserLoc, isDark, claimRadius, scanRadius }) {
   const map = useMap();
   const lastPos = useRef(null);
@@ -73,14 +71,13 @@ function MapInterface({ coords, stableUserLoc, isDark, claimRadius, scanRadius }
   );
 }
 
-// --- MAIN COMPONENT ---
 export default function ExploreTab({ 
   spots = {}, 
   unlockedSpots = [], 
   userLocation, 
   isDark, 
-  claimRadius = 20, 
-  scanRadius = 50 
+  claimRadius, // Dynamic from DB
+  scanRadius   // Dynamic from DB
 }) {
   const [mapRef, setMapRef] = useState(null);
 
@@ -94,12 +91,12 @@ export default function ExploreTab({
 
   const initialCenter = useMemo(() => stableUserLoc ? [stableUserLoc.lat, stableUserLoc.lng] : [40.7306, -73.9352], []);
 
-  // Center fix: Explicitly set icon size and anchor to be exactly half
+  // PERFECT CENTER ANCHORING
   const userIcon = useMemo(() => L.divIcon({
     className: 'custom-div-icon',
     html: `<div class="marker-pin-user"><div class="dot"></div><div class="pulse"></div></div>`,
     iconSize: [20, 20], 
-    iconAnchor: [10, 10]
+    iconAnchor: [10, 10] 
   }), []);
 
   const spotIcon = (isUnlocked) => L.divIcon({
@@ -115,47 +112,14 @@ export default function ExploreTab({
     }`}>
       <style>{`
         .leaflet-container { height: 100% !important; width: 100% !important; background: transparent !important; }
-        
-        /* THE ALIGNMENT FIX */
-        .custom-div-icon { 
-          background: none !important; 
-          border: none !important; 
-          display: flex !important; 
-          align-items: center !important; 
-          justify-content: center !important; 
-          pointer-events: none;
-        }
+        .custom-div-icon { background: none !important; border: none !important; display: flex !important; align-items: center !important; justify-content: center !important; }
         
         .marker-pin-user { position: relative; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
-        .marker-pin-user .dot { 
-          width: 8px; height: 8px; 
-          background: rgb(var(--theme-primary)); 
-          border: 1.5px solid white; 
-          border-radius: 50%; 
-          z-index: 10; 
-          box-shadow: 0 0 10px rgb(var(--theme-primary)); 
-        }
-        .marker-pin-user .pulse { 
-          position: absolute; 
-          width: 20px; height: 20px; 
-          border-radius: 50%; 
-          background: rgba(var(--theme-primary), 0.3); 
-          animation: user-pulse 2s infinite; 
-        }
+        .marker-pin-user .dot { width: 8px; height: 8px; background: rgb(var(--theme-primary)); border: 1.5px solid white; border-radius: 50%; z-index: 10; box-shadow: 0 0 10px rgb(var(--theme-primary)); }
+        .marker-pin-user .pulse { position: absolute; width: 20px; height: 20px; border-radius: 50%; background: rgba(var(--theme-primary), 0.3); animation: user-pulse 2s infinite; }
         
-        /* Spot Markers: Dynamic Colors */
-        .marker-pin-spot { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; }
-        .marker-pin-spot .dot { 
-          width: 8px; height: 8px; 
-          background: #71717a; 
-          border: 1.5px solid white; 
-          border-radius: 50%; 
-          transition: all 0.4s ease; 
-        }
-        .marker-pin-spot.unlocked .dot { 
-          background: rgb(var(--theme-primary)) !important; 
-          box-shadow: 0 0 10px rgb(var(--theme-primary)); 
-        }
+        .marker-pin-spot .dot { width: 8px; height: 8px; background: #71717a; border: 1.5px solid white; border-radius: 50%; transition: all 0.4s ease; }
+        .marker-pin-spot.unlocked .dot { background: rgb(var(--theme-primary)) !important; box-shadow: 0 0 10px rgb(var(--theme-primary)); }
 
         @keyframes user-pulse {
           0% { transform: scale(0.8); opacity: 0.6; }
@@ -189,7 +153,6 @@ export default function ExploreTab({
 
         {stableUserLoc && (
           <>
-            {/* INNER CLAIM RING */}
             <Circle
               center={[stableUserLoc.lat, stableUserLoc.lng]}
               radius={claimRadius}
@@ -202,7 +165,6 @@ export default function ExploreTab({
               }}
             />
             
-            {/* OUTER SCAN RADAR */}
             <Circle
               center={[stableUserLoc.lat, stableUserLoc.lng]}
               radius={scanRadius}
