@@ -15,8 +15,11 @@ export default function Navbar({ activeTab, setActiveTab, isAdmin, colors, isShr
       <div className={`
         ${colors.nav} pointer-events-auto backdrop-blur-3xl rounded-[2.5rem] 
         flex items-center border shadow-2xl shadow-black/20 
-        /* Only transition layout properties at 700ms to avoid color lag */
-        transition-[padding,gap,transform,margin] duration-700 ease-in-out
+        /* Layout Transition: 
+           Handles the physical shrinking (padding/gap) at 700ms. 
+           Color transitions are handled by the global CSS '*' rule.
+        */
+        transition-[padding,gap,transform] duration-700 ease-in-out
         ${isShrunk ? 'p-1 gap-0' : 'p-1.5 gap-1'}
       `}>
         {navItems.map((item) => (
@@ -25,20 +28,23 @@ export default function Navbar({ activeTab, setActiveTab, isAdmin, colors, isShr
               key={item.id} 
               onClick={() => setActiveTab(item.id)} 
               className={`
-                /* Snap color instantly (letting global CSS handle the fade) */
-                /* but keeping transform snappy for hover/active states */
-                transition-transform duration-200 relative flex items-center justify-center rounded-[2rem]
+                relative flex items-center justify-center rounded-[2rem]
+                /* Snappy transform for the 105% scale effect */
+                transition-transform duration-200 ease-out
                 ${isShrunk ? 'p-3 px-4' : 'p-4 px-6'}
                 ${activeTab === item.id 
                   ? 'bg-[rgb(var(--theme-primary))]/10 text-[rgb(var(--theme-primary))] scale-105' 
-                  : 'text-zinc-500 hover:text-[rgb(var(--theme-primary))]/40 active:scale-95'}
+                  : 'text-zinc-500 hover:text-[rgb(var(--theme-primary))]/60 active:scale-95'}
               `}
             >
               <item.icon 
                 size={isShrunk ? 18 : 20} 
                 strokeWidth={activeTab === item.id ? 2.5 : 2}
-                /* No transition here allows the global CSS transition to take over */
-                className="transition-none"
+                /* No duration class here. 
+                   The global CSS '*' will make this 0.1s on hover 
+                   and 0.5s during theme changes.
+                */
+                className="block"
               />
               
               {/* Active Indicator Dot */}

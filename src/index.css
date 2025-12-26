@@ -4,20 +4,20 @@
 
 /* --- THEME VARIABLE ENGINE --- */
 :root {
-  /* Default: Emerald Style */
   --theme-primary: 16, 185, 129;
   --theme-primary-glow: rgba(16, 185, 129, 0.8);
   --theme-bg-glass-light: rgba(255, 255, 255, 0.6);
   --theme-bg-glass-dark: rgba(24, 24, 27, 0.75);
   --theme-border-light: rgba(16, 185, 129, 0.15);
-  
   --theme-text-title-light: #18181b; 
   --theme-text-title-dark: #fafafa;  
   --theme-text-sub-dark: #71717a;    
-  
   --theme-text-light: #064e3b;
   --theme-map-bg-light: #f0fdf4;
   --theme-map-bg-dark: #09090b;
+
+  /* NEW: Global Transition Speed Variable */
+  --trans-speed: 0.5s;
 }
 
 [data-theme='winter'] {
@@ -26,10 +26,8 @@
   --theme-bg-glass-light: rgba(240, 249, 255, 0.5);
   --theme-bg-glass-dark: rgba(15, 23, 42, 0.8);
   --theme-border-light: rgba(186, 230, 253, 0.4);
-  
   --theme-text-title-light: #0c4a6e;
   --theme-text-title-dark: #f0f9ff; 
-  
   --theme-text-light: #0c4a6e;
   --theme-map-bg-light: #f0f9ff;
   --theme-map-bg-dark: #020617;
@@ -40,8 +38,16 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  /* THE FIX: Force everything (Header, icons, text) to transition colors together */
-  transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease;
+  /* THE FIX: Use the variable. Default is 0.5s for theme swaps */
+  transition: background-color var(--trans-speed) ease, 
+              border-color var(--trans-speed) ease, 
+              color var(--trans-speed) ease,
+              box-shadow var(--trans-speed) ease;
+}
+
+/* THE INTERACTION FIX: Force instant speed when hovering/clicking */
+button:hover, button:active, a:hover, .interactive:hover {
+  --trans-speed: 0.1s !important;
 }
 
 body {
@@ -59,17 +65,14 @@ body {
   background: var(--theme-bg-glass-light);
   border: 1px solid var(--theme-border-light);
   color: var(--theme-text-title-light);
-  /* Remove individual transition to let the global * rule above handle it */
 }
 
-/* --- THE FIX: Force high-contrast white in Dark Mode --- */
 .dark .smart-glass {
   background: var(--theme-bg-glass-dark);
   border-color: rgba(255, 255, 255, 0.08);
   color: var(--theme-text-title-dark) !important; 
 }
 
-/* Ensure secondary text stays readable but dim */
 .dark .smart-glass p:not(.font-bold) {
   color: var(--theme-text-sub-dark);
 }
@@ -79,10 +82,7 @@ body {
 }
 
 /* --- LEAFLET & MAP UI --- */
-.leaflet-control-attribution, 
-.leaflet-control-zoom { 
-  display: none !important; 
-}
+.leaflet-control-attribution, .leaflet-control-zoom { display: none !important; }
 
 .leaflet-container {
   width: 100% !important;
@@ -117,27 +117,6 @@ body {
 }
 
 /* --- MARKERS --- */
-.leaflet-marker-icon {
-  background: none !important;
-  border: none !important;
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-  margin: 0 !important;
-}
-
-.marker-container, .user-marker-container { 
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  width: 24px; 
-  height: 24px; 
-}
-
 .marker-core {
   width: 10px; height: 10px;
   background: rgb(var(--theme-primary));
@@ -150,24 +129,6 @@ body {
 
 .pulse-ring {
   background: rgba(var(--theme-primary), 0.4);
-  position: absolute;
-  width: 100%; height: 100%;
-  border-radius: 50%;
-  animation: marker-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
-}
-
-.user-marker-core {
-  width: 12px; height: 12px;
-  background: #3b82f6;
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.8);
-  position: relative;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  z-index: 2;
-}
-
-.user-pulse-ring {
-  background: rgba(59, 130, 246, 0.4);
   position: absolute;
   width: 100%; height: 100%;
   border-radius: 50%;
@@ -188,7 +149,6 @@ body {
   transform: scale(0.9) translateY(12px) !important;
   opacity: 0.85;
   filter: blur(0.5px) saturate(1.2);
-  /* This specifically animates the shrinking/floating movement */
   transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease;
 }
 
