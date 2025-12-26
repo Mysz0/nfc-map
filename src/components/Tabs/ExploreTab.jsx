@@ -129,6 +129,7 @@ export default function ExploreTab({
 
         {stableUserLoc && (
           <>
+            {/* Inner Static Claim Circle */}
             <Circle
               center={[stableUserLoc.lat, stableUserLoc.lng]}
               radius={Number(claimRadius) || 20}
@@ -141,6 +142,7 @@ export default function ExploreTab({
               }}
             />
             
+            {/* Outer Animated Scan Circle (The Radar) */}
             <Circle
               center={[stableUserLoc.lat, stableUserLoc.lng]}
               radius={Number(customRadius) || 50}
@@ -148,7 +150,7 @@ export default function ExploreTab({
                 color: 'rgb(var(--theme-primary))',
                 fillColor: 'transparent',
                 dashArray: '20, 20',
-                className: 'radar-ping', /* Hooks into the rotation and scale fix */
+                className: 'radar-ping',
                 interactive: false
               }}
             />

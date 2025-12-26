@@ -136,15 +136,30 @@ body {
   100% { transform: scale(2.2); opacity: 0; }
 }
 
+/* --- THE FINAL RADAR FIX --- */
 .radar-ping { 
+  /* Force dashed appearance via CSS to prevent "solid" bug */
+  stroke-dasharray: 10, 15 !important;
+  stroke-linecap: round;
+
+  /* Proper SVG rotation math */
   transform-box: fill-box;
-  transform-origin: center;
-  animation: radarSpin 15s linear infinite;
+  transform-origin: center center;
+  
+  /* Double animation: Spinning + Subtle Breathing */
+  animation: 
+    radarSpin 10s linear infinite,
+    radarBreathe 3s ease-in-out infinite;
 }
 
 @keyframes radarSpin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+@keyframes radarBreathe {
+  0%, 100% { stroke-width: 1px; stroke-opacity: 0.8; }
+  50% { stroke-width: 2.5px; stroke-opacity: 0.4; }
 }
 
 /* --- UI EFFECTS & MISC --- */
