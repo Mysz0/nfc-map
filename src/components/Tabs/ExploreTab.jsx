@@ -4,30 +4,23 @@ import { Target } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Ensures the map centers on the user when the app starts
 function MapRecenter({ location }) {
   const map = useMap();
   useEffect(() => {
-    if (location) {
-      map.setView([location.lat, location.lng], 16);
-    }
+    if (location) map.setView([location.lat, location.lng], 16);
   }, [location, map]);
   return null;
 }
 
-// Fixes gray tiles/layout issues when the tab is switched
 function MapInvalidator() {
   const map = useMap();
   useEffect(() => {
-    const timer = setTimeout(() => {
-      map.invalidateSize();
-    }, 250);
+    const timer = setTimeout(() => { map.invalidateSize(); }, 250);
     return () => clearTimeout(timer);
   }, [map]);
   return null;
 }
 
-// UI Overlays for the Map
 function MapInterface({ stableUserLoc, claimRadius, customRadius }) {
   const map = useMap();
   return (
@@ -45,7 +38,6 @@ function MapInterface({ stableUserLoc, claimRadius, customRadius }) {
           </button>
         </div>
       </div>
-
       <div className="leaflet-bottom leaflet-left leaflet-right" style={{ marginBottom: '24px', padding: '0 24px' }}>
         <div className="leaflet-control w-full pointer-events-none">
           <div className="smart-glass border p-4 rounded-3xl flex justify-between items-center shadow-2xl w-full pointer-events-auto">
@@ -66,16 +58,8 @@ function MapInterface({ stableUserLoc, claimRadius, customRadius }) {
   );
 }
 
-export default function ExploreTab({ 
-  spots = {}, 
-  unlockedSpots = [], 
-  userLocation, 
-  isDark, 
-  claimRadius, 
-  customRadius 
-}) {
+export default function ExploreTab({ spots = {}, unlockedSpots = [], userLocation, isDark, claimRadius, customRadius }) {
   const [mapRef, setMapRef] = useState(null);
-
   const stableUserLoc = useMemo(() => {
     if (!userLocation?.lat) return null;
     return { lat: userLocation.lat, lng: userLocation.lng };
@@ -83,38 +67,44 @@ export default function ExploreTab({
 
   const fallbackCenter = [40.7306, -73.9352];
 
-  // SOFT SCIFI SVG RADAR
   const animatedUserIcon = useMemo(() => {
     return L.divIcon({
       className: 'soft-radar-icon',
       html: `
         <svg viewBox="0 0 200 200" class="radar-svg" style="width: 200px; height: 200px;">
           <defs>
-            <radialGradient id="radarGradient" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="rgb(var(--theme-primary))" stop-opacity="0.3" />
+            <radialGradient id="radarAura" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="rgb(var(--theme-primary))" stop-opacity="0.4" />
               <stop offset="100%" stop-color="rgb(var(--theme-primary))" stop-opacity="0" />
             </radialGradient>
-            <filter id="softGlow">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="4" />
+            
+            <filter id="ultraSoft">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="5" />
             </filter>
+
+            <mask id="sweepMask">
+               <path d="M 100 100 L 100 20 A 80 80 0 0 1 180 100 Z" fill="white" filter="url(#ultraSoft)" />
+            </mask>
           </defs>
           
-          <circle cx="100" cy="100" r="70" class="radar-aura" fill="url(#radarGradient)" />
+          <circle cx="100" cy="100" r="85" class="radar-aura" fill="url(#radarAura)" filter="url(#ultraSoft)" />
           
+          <circle cx="100" cy="100" r="80" fill="none" stroke="rgb(var(--theme-primary))" stroke-width="3" stroke-opacity="0.15" filter="url(#ultraSoft)" />
+          <circle cx="100" cy="100" r="80" fill="none" stroke="rgb(var(--theme-primary))" stroke-width="1" stroke-opacity="0.4" />
+
           <g class="radar-rotation-group">
             <path 
-              d="M 100 100 L 100 30 A 70 70 0 0 1 170 100 Z" 
+              d="M 100 100 L 100 20 A 80 80 0 0 1 180 100 Z" 
               fill="rgb(var(--theme-primary))" 
-              fill-opacity="0.2"
-              filter="url(#softGlow)"
+              fill-opacity="0.3"
+              mask="url(#sweepMask)"
             />
-            <line x1="100" y1="100" x2="100" y2="30" stroke="rgb(var(--theme-primary))" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.6" />
+            <line x1="100" y1="100" x2="100" y2="20" stroke="rgb(var(--theme-primary))" stroke-width="3" stroke-linecap="round" stroke-opacity="0.6" filter="url(#ultraSoft)" />
+            <line x1="100" y1="100" x2="100" y2="20" stroke="rgb(var(--theme-primary))" stroke-width="1" stroke-linecap="round" stroke-opacity="0.8" />
           </g>
 
-          <circle cx="100" cy="100" r="70" fill="none" stroke="rgb(var(--theme-primary))" stroke-width="0.5" stroke-opacity="0.3" />
-
-          <circle cx="100" cy="100" r="5" fill="white" />
-          <circle cx="100" cy="100" r="5" fill="none" stroke="rgb(var(--theme-primary))" stroke-width="2" class="core-dot-pulse" />
+          <circle cx="100" cy="100" r="6" fill="white" />
+          <circle cx="100" cy="100" r="6" fill="none" stroke="rgb(var(--theme-primary))" stroke-width="2" class="core-dot-pulse" />
         </svg>
       `,
       iconSize: [200, 200],
@@ -124,54 +114,22 @@ export default function ExploreTab({
 
   const spotIcon = (isUnlocked) => L.divIcon({
     className: 'custom-div-icon',
-    html: `<div class="marker-pin-spot ${isUnlocked ? 'unlocked' : ''}">
-              <div class="dot"></div>
-            </div>`,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0]
+    html: `<div class="marker-pin-spot ${isUnlocked ? 'unlocked' : ''}"><div class="dot"></div></div>`,
+    iconSize: [0, 0], iconAnchor: [0, 0]
   });
 
   return (
     <div className={`relative w-full h-[70vh] rounded-[3rem] overflow-hidden border transition-all duration-700 ${
       isDark ? 'border-white/5 bg-zinc-950' : 'border-[rgb(var(--theme-primary))]/10 bg-emerald-50'
     }`}>
-      <MapContainer 
-        center={stableUserLoc ? [stableUserLoc.lat, stableUserLoc.lng] : fallbackCenter} 
-        zoom={16} 
-        zoomControl={false} 
-        scrollWheelZoom={true} 
-        ref={setMapRef}
-      >
+      <MapContainer center={stableUserLoc ? [stableUserLoc.lat, stableUserLoc.lng] : fallbackCenter} zoom={16} zoomControl={false} scrollWheelZoom={true} ref={setMapRef}>
         <MapInvalidator />
         <MapRecenter location={stableUserLoc} />
-        
-        <TileLayer
-          key={isDark ? 'dark' : 'light'}
-          url={isDark 
-            ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" 
-            : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"}
-        />
-
-        <MapInterface 
-          stableUserLoc={stableUserLoc} 
-          claimRadius={claimRadius} 
-          customRadius={customRadius} 
-        />
-
-        {stableUserLoc && (
-          <Marker 
-            position={[stableUserLoc.lat, stableUserLoc.lng]} 
-            icon={animatedUserIcon} 
-            zIndexOffset={1000} 
-          />
-        )}
-
+        <TileLayer key={isDark ? 'dark' : 'light'} url={isDark ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"} />
+        <MapInterface stableUserLoc={stableUserLoc} claimRadius={claimRadius} customRadius={customRadius} />
+        {stableUserLoc && <Marker position={[stableUserLoc.lat, stableUserLoc.lng]} icon={animatedUserIcon} zIndexOffset={1000} />}
         {Object.values(spots).map((spot) => (
-          <Marker 
-            key={spot.id} 
-            position={[spot.lat, spot.lng]} 
-            icon={spotIcon(unlockedSpots.includes(spot.id))}
-          >
+          <Marker key={spot.id} position={[spot.lat, spot.lng]} icon={spotIcon(unlockedSpots.includes(spot.id))}>
             <Popup closeButton={false} offset={[0, -5]}>
               <div className="smart-glass p-3 rounded-2xl border border-white/10 min-w-[140px] shadow-2xl">
                 <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400 mb-1">Node</p>
