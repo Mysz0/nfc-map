@@ -136,23 +136,10 @@ body {
   100% { transform: scale(2.2); opacity: 0; }
 }
 
-/* --- THE RADAR FIX (FORCED DASHES & SPIN) --- */
 .radar-ping { 
-  /* 1. Prevent Clumping: Keeps line thickness constant during zoom */
-  vector-effect: non-scaling-stroke !important;
-
-  /* 2. FORCE DASHES: 10px line, 20px gap. !important ensures it overrides any defaults */
-  stroke-dasharray: 10, 20 !important; 
-  
-  /* 3. FIX SPIN: 'fill-box' forces rotation around the circle itself, not the map */
-  transform-box: fill-box !important; 
-  transform-origin: center center !important;
-  
-  animation: 
-    radarSpin 10s linear infinite !important;
-    
-  stroke-linecap: round;
-  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: radarSpin 15s linear infinite;
 }
 
 @keyframes radarSpin {

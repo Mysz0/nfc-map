@@ -147,6 +147,7 @@ export default function ExploreTab({
               pathOptions={{
                 color: 'rgb(var(--theme-primary))',
                 fillColor: 'transparent',
+                dashArray: '20, 20',
                 className: 'radar-ping', /* Hooks into the rotation and scale fix */
                 interactive: false
               }}
