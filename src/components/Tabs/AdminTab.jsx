@@ -10,7 +10,9 @@ import {
   Target, 
   Flame, 
   MapPin,
-  Search
+  Search,
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -21,7 +23,6 @@ function ChangeView({ center }) {
   return null;
 }
 
-// Updated Leaflet Icon to use CSS variables
 const getPreviewIcon = () => L.divIcon({
   className: 'custom-div-icon',
   html: `<div style="background-color: rgb(var(--theme-primary)); width: 15px; height: 15px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px var(--theme-primary-glow);"></div>`,
@@ -43,17 +44,14 @@ export default function AdminTab({
   deleteSpotFromDB,
   userLocation,
   spotStreaks = {},
-  updateNodeStreak
+  updateNodeStreak,
+  radiusOptions // Now coming from props/hook logic
 }) {
   const [newSpot, setNewSpot] = useState({ name: '', lat: '', lng: '', points: 50 });
   const [searchQuery, setSearchQuery] = useState('');
-
-  const radiusOptions = [
-    { label: '250m', val: 250 },
-    { label: '500m', val: 500 },
-    { label: '1km', val: 1000 },
-    { label: '5km', val: 5000 },
-  ];
+  
+  // Custom Purge State
+  const [purgeTarget, setPurgeTarget] = useState(null);
 
   const handleUseMyLocation = () => {
     if (userLocation) {
@@ -79,6 +77,13 @@ export default function AdminTab({
     setNewSpot({ name: '', lat: '', lng: '', points: 50 });
   };
 
+  const confirmPurge = () => {
+    if (purgeTarget) {
+      deleteSpotFromDB(purgeTarget.id);
+      setPurgeTarget(null);
+    }
+  };
+
   const filteredSpots = Object.values(spots).filter(s => 
     s.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -90,7 +95,40 @@ export default function AdminTab({
   return (
     <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300 pb-32">
       
-      {/* 1. DEVELOPER OVERRIDES - Kept RED for safety/warning */}
+      {/* --- CUSTOM PURGE MODAL --- */}
+      {purgeTarget && (
+        <div className="fixed inset-0 z-[6000] flex items-center justify-center px-6 backdrop-blur-md bg-black/40 animate-in fade-in duration-200">
+          <div className="smart-glass w-full max-w-xs p-8 rounded-[3rem] border border-red-500/30 shadow-2xl text-center space-y-6 animate-in zoom-in-90 duration-300">
+            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto border border-red-500/20 text-red-500">
+              <AlertTriangle size={32} />
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-black uppercase tracking-widest text-white">Confirm Purge</h3>
+              <p className="text-[10px] text-zinc-500 font-medium leading-relaxed">
+                You are about to permanently delete <span className="text-red-400 font-bold">"{purgeTarget.name}"</span> from the global registry.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button 
+                onClick={() => setPurgeTarget(null)}
+                className="py-4 rounded-2xl bg-zinc-800/50 text-white font-black text-[9px] uppercase tracking-widest hover:bg-zinc-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmPurge}
+                className="py-4 rounded-2xl bg-red-600 text-white font-black text-[9px] uppercase tracking-widest shadow-lg shadow-red-600/20 hover:bg-red-500 transition-colors"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 1. DEVELOPER OVERRIDES */}
       <div className={`smart-glass p-8 rounded-[2.5rem] border border-red-500/20 space-y-6`}>
         <div className="flex items-center gap-2 text-red-500 ml-1">
           <ShieldAlert size={16} />
@@ -102,7 +140,7 @@ export default function AdminTab({
             <Radio size={12}/> Detection Radius
           </label>
           <div className="grid grid-cols-4 gap-2">
-            {radiusOptions.map(opt => (
+            {radiusOptions?.map(opt => (
               <button
                 key={opt.val}
                 onClick={() => updateRadius(opt.val)}
@@ -123,7 +161,7 @@ export default function AdminTab({
         </button>
       </div>
 
-      {/* 2. DEPLOYMENT FORM - Updated to Theme Primary */}
+      {/* 2. DEPLOYMENT FORM */}
       <div className={`smart-glass p-8 rounded-[3rem] border border-[rgb(var(--theme-primary))]/20 space-y-6`}>
         <h2 className="font-bold uppercase flex items-center gap-2 text-[10px] tracking-widest text-[rgb(var(--theme-primary))] ml-1">
           <Plus size={14}/> Deploy New Node
@@ -187,7 +225,7 @@ export default function AdminTab({
         </form>
       </div>
 
-      {/* 3. NODE REGISTRY - Updated to Theme Primary */}
+      {/* 3. NODE REGISTRY */}
       <div className={`smart-glass p-8 rounded-[3rem] border border-white/5 space-y-6`}>
         <div className="flex items-center justify-between ml-1">
           <h2 className="font-bold uppercase flex items-center gap-2 text-[10px] tracking-widest text-[rgb(var(--theme-primary))]">
@@ -246,8 +284,9 @@ export default function AdminTab({
                       {isUnlocked ? <Trash2 size={14}/> : <Zap size={14}/>}
                     </button>
                     
+                    {/* TRIGGER CUSTOM PURGE */}
                     <button 
-                      onClick={() => { if(confirm(`Purge ${spot.name}?`)) deleteSpotFromDB(spot.id) }} 
+                      onClick={() => setPurgeTarget(spot)} 
                       className={`p-2 transition-colors ${isDark ? 'text-zinc-600 hover:text-red-600' : 'text-zinc-400 hover:text-red-600'}`}
                     >
                       <ShieldAlert size={14} />
