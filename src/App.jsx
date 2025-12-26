@@ -152,7 +152,7 @@ export default function App() {
             isDark={isDark} 
             spots={spots} 
             unlockedSpots={unlockedSpots}
-            radius={customRadius}
+            claimRadius={claimRadius}
             colors={colors} 
           />
         )}

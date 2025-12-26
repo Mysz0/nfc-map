@@ -27,7 +27,6 @@ function MapController({ coords }) {
     const moveDist = lastPos.current ? getDistance(coords.lat, coords.lng, lastPos.current.lat, lastPos.current.lng) : 999;
 
     // SHAKE-PROOF: Only pan if user moved > 3 meters
-    // This matches your 3m update preference
     if (moveDist > 3) {
       map.panTo([coords.lat, coords.lng], { animate: true, duration: 1 });
       lastPos.current = coords;
@@ -36,12 +35,10 @@ function MapController({ coords }) {
   return null;
 }
 
-export default function ExploreTab({ spots = {}, unlockedSpots = [], userLocation, isDark }) {
+// UPDATED: Added claimRadius to props
+export default function ExploreTab({ spots = {}, unlockedSpots = [], userLocation, isDark, claimRadius = 20 }) {
   const [map, setMap] = useState(null);
   
-  // FIXED RANGE: Hardcoded to match useGeoLocation security
-  const CLAIM_RANGE = 20;
-
   // 2. COORDINATE ROUNDING
   const stableUserLoc = useMemo(() => {
     if (!userLocation?.lat) return null;
@@ -105,7 +102,8 @@ export default function ExploreTab({ spots = {}, unlockedSpots = [], userLocatio
             <Marker position={[stableUserLoc.lat, stableUserLoc.lng]} icon={userIcon} />
             <Circle 
               center={[stableUserLoc.lat, stableUserLoc.lng]}
-              radius={CLAIM_RANGE} 
+              // UPDATED: Now uses dynamic claimRadius from DB
+              radius={claimRadius} 
               pathOptions={{ 
                 color: 'rgb(var(--theme-primary))', 
                 fillColor: 'rgb(var(--theme-primary))', 
@@ -145,9 +143,10 @@ export default function ExploreTab({ spots = {}, unlockedSpots = [], userLocatio
               </span>
             ) : 'AQUIRING SIGNAL...'}
           </div>
+          {/* UPDATED: Displays dynamic range */}
           <div className="text-[rgb(var(--theme-primary))] font-black text-[10px] italic uppercase tracking-tighter flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--theme-primary))] animate-pulse" />
-            {CLAIM_RANGE}M RANGE
+            {claimRadius}M RANGE
           </div>
         </div>
       </div>
