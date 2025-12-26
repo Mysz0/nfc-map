@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { Target } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// FIX 1: This component forces the map to move when userLocation is first found
+// Ensures the map centers on the user when the app starts
 function MapRecenter({ location }) {
   const map = useMap();
   useEffect(() => {
@@ -15,6 +15,7 @@ function MapRecenter({ location }) {
   return null;
 }
 
+// Fixes gray tiles/layout issues when the tab is switched
 function MapInvalidator() {
   const map = useMap();
   useEffect(() => {
@@ -26,6 +27,7 @@ function MapInvalidator() {
   return null;
 }
 
+// UI Overlays for the Map
 function MapInterface({ stableUserLoc, claimRadius, customRadius }) {
   const map = useMap();
   return (
@@ -81,15 +83,25 @@ export default function ExploreTab({
 
   const fallbackCenter = [40.7306, -73.9352];
 
-  const userIcon = useMemo(() => L.divIcon({
-    className: 'custom-div-icon',
-    html: `<div class="marker-pin-user">
-              <div class="pulse"></div>
-              <div class="dot"></div>
-            </div>`,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0]
-  }), []);
+  // THE ULTIMATE ANIMATED RADAR ICON
+  // This combines the User Dot, a Pulse, and a Rotating Sweep into one Marker
+  const animatedUserIcon = useMemo(() => {
+    return L.divIcon({
+      className: 'radar-container-icon',
+      html: `
+        <div class="radar-wrapper">
+          <div class="radar-echo"></div>
+          <div class="radar-sweep"></div>
+          <div class="user-core">
+            <div class="core-glow"></div>
+            <div class="core-dot"></div>
+          </div>
+        </div>
+      `,
+      iconSize: [200, 200],
+      iconAnchor: [100, 100]
+    });
+  }, []);
 
   const spotIcon = (isUnlocked) => L.divIcon({
     className: 'custom-div-icon',
@@ -106,7 +118,7 @@ export default function ExploreTab({
     }`}>
       <MapContainer 
         center={stableUserLoc ? [stableUserLoc.lat, stableUserLoc.lng] : fallbackCenter} 
-        zoom={15} 
+        zoom={16} 
         zoomControl={false} 
         scrollWheelZoom={true} 
         ref={setMapRef}
@@ -128,35 +140,11 @@ export default function ExploreTab({
         />
 
         {stableUserLoc && (
-          <>
-            {/* Inner Static Claim Circle */}
-            <Circle
-              center={[stableUserLoc.lat, stableUserLoc.lng]}
-              radius={Number(claimRadius) || 20}
-              pathOptions={{
-                color: 'rgb(var(--theme-primary))',
-                fillColor: 'rgb(var(--theme-primary))',
-                fillOpacity: 0.1,
-                weight: 1.5,
-                interactive: false
-              }}
-            />
-            
-            {/* Outer Animated Scan Circle (The Radar) */}
-            <Circle
-              center={[stableUserLoc.lat, stableUserLoc.lng]}
-              radius={Number(customRadius) || 50}
-              pathOptions={{
-                color: 'rgb(var(--theme-primary))',
-                fillColor: 'transparent',
-                dashArray: '20, 20',
-                className: 'radar-ping',
-                interactive: false
-              }}
-            />
-
-            <Marker position={[stableUserLoc.lat, stableUserLoc.lng]} icon={userIcon} zIndexOffset={1000} />
-          </>
+          <Marker 
+            position={[stableUserLoc.lat, stableUserLoc.lng]} 
+            icon={animatedUserIcon} 
+            zIndexOffset={1000} 
+          />
         )}
 
         {Object.values(spots).map((spot) => (
