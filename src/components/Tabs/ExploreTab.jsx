@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
-import { Target } from 'lucide-react';
+import { Target, Lock, CheckCircle2, ChevronUp, ChevronDown } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -75,7 +75,8 @@ export default function ExploreTab({
   userLocation, 
   isDark, 
   claimRadius, 
-  customRadius 
+  customRadius,
+  onVote // Prop to handle the voting logic externally
 }) {
   const [mapRef, setMapRef] = useState(null);
   const [zoom, setZoom] = useState(16);
@@ -87,9 +88,7 @@ export default function ExploreTab({
 
   const fallbackCenter = [40.7306, -73.9352];
 
-  // RADAR ICON THAT SCALES WITH ZOOM
   const animatedUserIcon = useMemo(() => {
-    // Dynamic scale logic: base size 200px at zoom level 16
     const scale = Math.pow(2, zoom - 16);
     const size = 200 * scale;
 
@@ -102,19 +101,16 @@ export default function ExploreTab({
               <feGaussianBlur in="SourceGraphic" stdDeviation="4" />
             </filter>
           </defs>
-
           <g class="radar-rotation-group">
             <circle cx="100" cy="100" r="70" fill="none" 
               stroke="rgb(var(--theme-primary))" stroke-width="8" 
               stroke-dasharray="20 30" stroke-linecap="round" 
               stroke-opacity="0.25" filter="url(#softGlow)" />
-            
             <circle cx="100" cy="100" r="70" fill="none" 
               stroke="rgb(var(--theme-primary))" stroke-width="2.5" 
               stroke-dasharray="20 30" stroke-linecap="round" 
               stroke-opacity="0.7" />
           </g>
-
           <circle cx="100" cy="100" r="25" fill="rgb(var(--theme-primary))" fill-opacity="0.1" class="radar-aura" />
           <circle cx="100" cy="100" r="7" fill="white" stroke="rgb(var(--theme-primary))" stroke-width="2.5" />
         </svg>
@@ -122,7 +118,7 @@ export default function ExploreTab({
       iconSize: [size, size],
       iconAnchor: [size / 2, size / 2]
     });
-  }, [zoom, isDark]); // Updates when zooming or theme changes
+  }, [zoom]);
 
   const spotIcon = (isUnlocked) => L.divIcon({
     className: 'custom-div-icon',
@@ -153,34 +149,59 @@ export default function ExploreTab({
             : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"}
         />
 
-        <MapInterface 
-          stableUserLoc={stableUserLoc} 
-          claimRadius={claimRadius} 
-          customRadius={customRadius} 
-        />
+        <MapInterface stableUserLoc={stableUserLoc} claimRadius={claimRadius} customRadius={customRadius} />
 
-        {stableUserLoc && (
-          <Marker 
-            position={[stableUserLoc.lat, stableUserLoc.lng]} 
-            icon={animatedUserIcon} 
-            zIndexOffset={1000} 
-          />
-        )}
+        {stableUserLoc && <Marker position={[stableUserLoc.lat, stableUserLoc.lng]} icon={animatedUserIcon} zIndexOffset={1000} />}
 
-        {Object.values(spots).map((spot) => (
-          <Marker 
-            key={spot.id} 
-            position={[spot.lat, spot.lng]} 
-            icon={spotIcon(unlockedSpots.includes(spot.id))}
-          >
-            <Popup closeButton={false} offset={[0, -5]}>
-              <div className="smart-glass p-3 rounded-2xl border border-white/10 min-w-[140px] shadow-2xl">
-                <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400 mb-1">Node</p>
-                <p className="text-xs font-bold text-white truncate">{spot.name}</p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        {Object.values(spots).map((spot) => {
+          const isUnlocked = unlockedSpots.includes(spot.id);
+          return (
+            <Marker 
+              key={spot.id} 
+              position={[spot.lat, spot.lng]} 
+              icon={spotIcon(isUnlocked)}
+            >
+              <Popup closeButton={false} offset={[0, -5]}>
+                <div className="smart-glass p-3 rounded-2xl border border-white/10 min-w-[180px] shadow-2xl">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className={`text-[9px] font-black uppercase tracking-widest ${isUnlocked ? 'text-[rgb(var(--theme-primary))]' : 'text-zinc-500'}`}>
+                      {isUnlocked ? 'CLAIMED' : 'LOCKED'}
+                    </p>
+                    {isUnlocked ? (
+                      <CheckCircle2 size={12} className="text-[rgb(var(--theme-primary))]" />
+                    ) : (
+                      <Lock size={12} className="text-zinc-500" />
+                    )}
+                  </div>
+                  <p className="text-xs font-bold text-white truncate mb-3">{spot.name}</p>
+
+                  <div className="flex items-center gap-2 border-t border-white/5 pt-3">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onVote?.(spot.id, 'upvotes');
+                      }}
+                      className="flex-1 flex items-center justify-center py-1.5 rounded-xl bg-white/5 hover:bg-emerald-500/20 hover:text-emerald-400 transition-colors active:scale-95"
+                    >
+                      <ChevronUp size={18} />
+                      <span className="text-[10px] font-bold ml-1">{spot.upvotes || 0}</span>
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onVote?.(spot.id, 'downvotes');
+                      }}
+                      className="flex-1 flex items-center justify-center py-1.5 rounded-xl bg-white/5 hover:bg-rose-500/20 hover:text-rose-400 transition-colors active:scale-95"
+                    >
+                      <ChevronDown size={18} />
+                      <span className="text-[10px] font-bold ml-1">{spot.downvotes || 0}</span>
+                    </button>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
     </div>
   );

@@ -3,6 +3,7 @@ import { supabase } from '../supabase';
 import { useProfile } from './useProfile';
 import { useSpots } from './useSpots';
 import { useAdmin } from './useAdmin';
+import { useVotes } from './useVotes'; // New import
 
 export function useGameLogic(user, showToast) {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -38,13 +39,12 @@ export function useGameLogic(user, showToast) {
     }
   };
 
-  // 1. Initialize Profile (Now includes claimRadius and updateClaimRadius)
   const profile = useProfile(user, showToast, fetchLeaderboard);
-
-  // 2. Initialize Spots
   const spots = useSpots(user, showToast, profile.totalPoints, profile.setTotalPoints, fetchLeaderboard);
 
-  // 3. Initialize Admin (Now has access to both detection and claim options)
+  // Initialize the new voting hook, passing setSpots so it can update the UI instantly
+  const { handleVote } = useVotes(user, spots.setSpots);
+
   const admin = useAdmin(
     user, 
     profile.userRole, 
@@ -61,11 +61,11 @@ export function useGameLogic(user, showToast) {
     if (user) fetchLeaderboard();
   }, [user]);
 
-  // We return EVERYTHING so App.jsx can destructure it
   return { 
     ...profile, 
     ...spots, 
     ...admin, 
+    handleVote, // Export handleVote to App.jsx
     leaderboard, 
     fetchLeaderboard 
   };

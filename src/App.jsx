@@ -51,13 +51,13 @@ export default function App() {
     claimSpot, saveUsername, toggleEmailVisibility,
     removeSpot, resetTimer, addNewSpot, deleteSpotFromDB,
     updateNodeStreak,
-    // NEW RADIUS LOGIC
-    customRadius,      // Detection Radius from DB
-    claimRadius,       // Claim Radius from DB
-    updateRadius,      // DB Setter for Detection
-    updateClaimRadius, // DB Setter for Claim
-    detectionOptions,  // Array for Admin buttons
-    claimOptions       // Array for Admin buttons
+    handleVote,        // Extracted from useGameLogic
+    customRadius,      
+    claimRadius,       
+    updateRadius,      
+    updateClaimRadius, 
+    detectionOptions,  
+    claimOptions       
   } = useGameLogic(user, showToast);
 
   // High-accuracy location + proximity check (Dynamic thresholds from DB)
@@ -142,7 +142,7 @@ export default function App() {
         )}
         
         {activeTab === 'leaderboard' && (
-          <LeaderboardTab leaderboard={leaderboard} username={username} colors={colors} />
+          <LeaderboardTab leaderboard={leaderboard} username={username} colors={colors} spots={spots} />
         )}
         
         {activeTab === 'explore' && (
@@ -155,6 +155,7 @@ export default function App() {
             claimRadius={claimRadius}
             customRadius={customRadius}
             colors={colors} 
+            onVote={handleVote} // Passing the vote logic to the tab
           />
         )}
         
@@ -183,15 +184,12 @@ export default function App() {
             isDark={isDark} 
             colors={colors} 
             userLocation={userLocation} 
-            // PROPS FOR DETECTION
             currentRadius={customRadius} 
             updateRadius={updateRadius} 
             detectionOptions={detectionOptions}
-            // PROPS FOR CLAIM
             currentClaimRadius={claimRadius}
             updateClaimRadius={updateClaimRadius}
             claimOptions={claimOptions}
-            // UTILS
             resetTimer={resetTimer} 
             addNewSpot={addNewSpot} 
             deleteSpotFromDB={deleteSpotFromDB}

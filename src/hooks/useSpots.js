@@ -6,7 +6,6 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
   const [unlockedSpots, setUnlockedSpots] = useState([]);
   const [spotStreaks, setSpotStreaks] = useState({});
 
-  // --- INTERNAL HELPERS ---
   const getMultiplier = (days) => {
     if (days >= 10) return 1.5;
     if (days >= 7) return 1.3;
@@ -58,12 +57,36 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
     fetchSpotData();
   }, [user]);
 
+  const handleVote = async (spotId, columnName) => {
+    if (!user) return;
+
+    setSpots(prev => ({
+      ...prev,
+      [spotId]: {
+        ...prev[spotId],
+        [columnName]: (prev[spotId][columnName] || 0) + 1
+      }
+    }));
+
+    const { error } = await supabase.rpc('increment_vote', {
+      row_id: spotId,
+      column_name: columnName
+    });
+
+    if (error) {
+      console.error("Vote failed:", error);
+      const { data } = await supabase.from('spots').select('*').eq('id', spotId).single();
+      if (data) {
+        setSpots(prev => ({ ...prev, [spotId]: data }));
+      }
+    }
+  };
+
   const claimSpot = async (input, customRadius) => {
     if (!user) return;
     const todayStr = new Date().toDateString();
     let spotsToClaim = [];
 
-    // Identify which spots are being interacted with
     if (typeof input === 'object' && input.lat && input.lng) {
       spotsToClaim = Object.values(spots).filter(spot => 
         getDistance(input.lat, input.lng, spot.lat, spot.lng) <= (customRadius || 250)
@@ -78,14 +101,12 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
     let claimCount = 0;
     const upsertRows = [];
     
-    // CLONE arrays and objects for immutability
     const newSpotStreaks = { ...spotStreaks };
     const newUnlocked = [...unlockedSpots];
 
     spotsToClaim.forEach(spot => {
       const info = spotStreaks[spot.id] || { last_claim: null, streak: 0 };
       
-      // Skip if already claimed today
       if (info.last_claim && new Date(info.last_claim).toDateString() === todayStr) return;
 
       const nextStreak = (Number(info.streak) || 0) + 1;
@@ -112,7 +133,6 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
 
     if (claimCount === 0) return showToast("Nodes already secured today", "error");
 
-    // 1. Update Database (User Spots)
     const { error: upsertError } = await supabase
       .from('user_spots')
       .upsert(upsertRows, { onConflict: 'user_id, spot_id' });
@@ -122,15 +142,10 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
       return showToast("Sync Error", "error");
     }
 
-    // 2. Update Database (Profile Points)
     const newTotalPoints = (totalPoints || 0) + totalEarned;
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({ 
-        total_points: newTotalPoints,
-        // Optional: you can sync unlocked_spots here if your schema uses it, 
-        // but the 'user_spots' table is the primary source of truth.
-      })
+      .update({ total_points: newTotalPoints })
       .eq('id', user.id);
 
     if (profileError) {
@@ -138,10 +153,8 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
       return showToast("Profile Sync Error", "error");
     }
 
-    // 3. FORCE REACTIVE UI UPDATE
-    // We update state AFTER DB success but BEFORE waiting for any re-fetches
-    setUnlockedSpots([...newUnlocked]); // New array reference forces re-render
-    setSpotStreaks({...newSpotStreaks}); // New object reference forces re-render
+    setUnlockedSpots([...newUnlocked]);
+    setSpotStreaks({...newSpotStreaks});
     setTotalPoints(newTotalPoints);
 
     showToast(`Secured ${claimCount} nodes: +${totalEarned} XP!`, "success");
@@ -177,6 +190,7 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
     setSpotStreaks,
     claimSpot,
     removeSpot,
+    handleVote,
     getMultiplier
   };
 }
