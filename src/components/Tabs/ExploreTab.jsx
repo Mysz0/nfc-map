@@ -4,7 +4,7 @@ import { Target } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// 1. FIXES THE GRAY SCREEN: Forces Leaflet to recalculate its container size after mount
+// Fixes gray screen on load
 function MapInvalidator() {
   const map = useMap();
   useEffect(() => {
@@ -16,31 +16,9 @@ function MapInvalidator() {
   return null;
 }
 
-function getDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371e3;
-  const φ1 = lat1 * Math.PI / 180;
-  const φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-    Math.cos(φ1) * Math.cos(φ2) *
-    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-}
-
-function MapInterface({ coords, stableUserLoc, isDark, claimRadius, scanRadius }) {
+// Map Status UI
+function MapInterface({ stableUserLoc, isDark, claimRadius, customRadius }) {
   const map = useMap();
-  const lastPos = useRef(null);
-
-  useEffect(() => {
-    if (!coords?.lat || !coords?.lng) return;
-    const moveDist = lastPos.current ? getDistance(coords.lat, coords.lng, lastPos.current.lat, lastPos.current.lng) : 999;
-    if (moveDist > 3) {
-      map.panTo([coords.lat, coords.lng], { animate: true, duration: 1 });
-      lastPos.current = coords;
-    }
-  }, [coords, map]);
-
   return (
     <>
       <div className="leaflet-top leaflet-right" style={{ marginTop: '24px', marginRight: '24px' }}>
@@ -60,20 +38,14 @@ function MapInterface({ coords, stableUserLoc, isDark, claimRadius, scanRadius }
       <div className="leaflet-bottom leaflet-left leaflet-right" style={{ marginBottom: '24px', padding: '0 24px' }}>
         <div className="leaflet-control w-full pointer-events-none">
           <div className="smart-glass border p-4 rounded-3xl flex justify-between items-center shadow-2xl w-full pointer-events-auto">
-            <div className={`text-[10px] font-bold tracking-widest uppercase ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-              {stableUserLoc ? (
-                <div className="flex gap-4 opacity-70">
-                  <span>{stableUserLoc.lat.toFixed(5)}°N</span>
-                  <span>{stableUserLoc.lng.toFixed(5)}°E</span>
-                </div>
-              ) : 'CONNECTING...'}
+            <div className="text-[10px] font-bold tracking-widest uppercase opacity-70">
+              {stableUserLoc ? `${stableUserLoc.lat.toFixed(5)}°N ${stableUserLoc.lng.toFixed(5)}°E` : 'SCANNING...'}
             </div>
-            
-            <div className="text-[rgb(var(--theme-primary))] font-black text-[10px] italic uppercase tracking-tighter flex items-center gap-5">
+            <div className="text-[rgb(var(--theme-primary))] font-black text-[10px] uppercase tracking-tighter flex items-center gap-5">
               <span className="opacity-60">CLAIM: {claimRadius}M</span>
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--theme-primary))] animate-pulse" />
-                SCAN: {scanRadius}M
+                SCAN: {customRadius}M
               </div>
             </div>
           </div>
@@ -89,7 +61,7 @@ export default function ExploreTab({
   userLocation, 
   isDark, 
   claimRadius, 
-  customRadius // FIXED: Renamed from scanRadius to match App.jsx prop
+  customRadius 
 }) {
   const [mapRef, setMapRef] = useState(null);
 
@@ -103,48 +75,30 @@ export default function ExploreTab({
     return [40.7306, -73.9352];
   }, []);
 
+  // --- ICONS SYNCED WITH YOUR CSS ---
   const userIcon = useMemo(() => L.divIcon({
     className: 'custom-div-icon',
-    html: `<div class="icon-wrapper"><div class="user-diamond-core"></div></div>`,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15]
+    html: `<div class="marker-pin-user">
+             <div class="pulse"></div>
+             <div class="dot"></div>
+           </div>`,
+    iconSize: [0, 0], // CSS absolute positioning handles this
+    iconAnchor: [0, 0]
   }), []);
 
   const spotIcon = (isUnlocked) => L.divIcon({
     className: 'custom-div-icon',
-    html: `<div class="icon-wrapper"><div class="marker-core ${isUnlocked ? 'core-unlocked' : ''}"></div></div>`,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15]
+    html: `<div class="marker-pin-spot ${isUnlocked ? 'unlocked' : ''}">
+             <div class="dot"></div>
+           </div>`,
+    iconSize: [0, 0],
+    iconAnchor: [0, 0]
   });
 
   return (
     <div className={`relative w-full h-[70vh] rounded-[3rem] overflow-hidden border transition-all duration-700 ${
-      isDark ? 'border-white/5 bg-zinc-950' : 'border-[rgb(var(--theme-primary))]/10 bg-emerald-50'
+      isDark ? 'border-white/5 bg-zinc-950' : 'border-[rgb(var(--theme-primary))]/10'
     }`}>
-      <style>{`
-        .leaflet-container { height: 100% !important; width: 100% !important; background: #18181b !important; }
-        .custom-div-icon { background: none !important; border: none !important; }
-        .icon-wrapper { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
-        .user-diamond-core { 
-            width: 14px; height: 14px; background: rgb(var(--theme-primary)); 
-            border: 2px solid white; transform: rotate(45deg); 
-            box-shadow: 0 0 15px rgb(var(--theme-primary)); 
-        }
-        .marker-core { 
-            width: 10px; height: 10px; background: #71717a; 
-            border: 2px solid white; border-radius: 50%; 
-        }
-        .core-unlocked { 
-            background: rgb(var(--theme-primary)) !important; 
-            box-shadow: 0 0 10px rgb(var(--theme-primary)) !important; 
-        }
-        .radar-ping { animation: radarPing 4s ease-in-out infinite; }
-        @keyframes radarPing { 
-          0%, 100% { stroke-opacity: 0.7; stroke-width: 1.5px; } 
-          50% { stroke-opacity: 0.2; stroke-width: 2.5px; } 
-        }
-      `}</style>
-
       <MapContainer center={initialCenter} zoom={15} zoomControl={false} scrollWheelZoom={true} ref={setMapRef}>
         <MapInvalidator />
         <TileLayer
@@ -155,11 +109,10 @@ export default function ExploreTab({
         />
 
         <MapInterface 
-          coords={stableUserLoc} 
           stableUserLoc={stableUserLoc} 
           isDark={isDark} 
           claimRadius={claimRadius} 
-          scanRadius={customRadius} // FIXED: Passing customRadius to interface
+          customRadius={customRadius} 
         />
 
         {stableUserLoc && (
@@ -171,20 +124,20 @@ export default function ExploreTab({
                 color: 'rgb(var(--theme-primary))',
                 fillColor: 'rgb(var(--theme-primary))',
                 fillOpacity: 0.15,
-                weight: 2,
+                weight: 1,
                 interactive: false
               }}
             />
             
             <Circle
               center={[stableUserLoc.lat, stableUserLoc.lng]}
-              radius={Number(customRadius) || 50} // FIXED: Using customRadius for the outer circle
+              radius={Number(customRadius) || 50}
               pathOptions={{
                 color: 'rgb(var(--theme-primary))',
                 fillColor: 'transparent',
                 weight: 1,
                 dashArray: '10, 15',
-                className: 'radar-ping',
+                className: 'radar-ping', // USES YOUR CSS ANIMATION
                 interactive: false
               }}
             />
@@ -195,7 +148,7 @@ export default function ExploreTab({
 
         {Object.values(spots).map((spot) => (
           <Marker 
-            key={`${spot.id}-${unlockedSpots.includes(spot.id)}`} 
+            key={spot.id} 
             position={[spot.lat, spot.lng]} 
             icon={spotIcon(unlockedSpots.includes(spot.id))}
           >
@@ -203,9 +156,6 @@ export default function ExploreTab({
               <div className="smart-glass p-3 rounded-2xl border border-white/10 min-w-[140px] shadow-2xl">
                 <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400 mb-1">Node</p>
                 <p className="text-xs font-bold text-white truncate">{spot.name}</p>
-                {unlockedSpots.includes(spot.id) && (
-                  <p className="text-[8px] text-[rgb(var(--theme-primary))] font-bold mt-1 tracking-tighter">SECURED</p>
-                )}
               </div>
             </Popup>
           </Marker>
