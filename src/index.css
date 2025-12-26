@@ -10,7 +10,7 @@
   --theme-bg-glass-dark: rgba(24, 24, 27, 0.75);
   --theme-border-light: rgba(16, 185, 129, 0.15);
   --theme-text-title-light: #18181b; 
-  --theme-text-title-dark: #fafafa;  
+  --theme-text-title-dark: #fafafa;   
   --theme-text-sub-dark: #71717a;    
   --theme-text-light: #064e3b;
   --theme-map-bg-light: #f0fdf4;
@@ -61,7 +61,6 @@ body {
   color: var(--theme-text-title-light);
   position: relative;
   overflow: hidden;
-  /* Prevents child elements or animations from leaking out */
   isolation: isolate;
 }
 
@@ -73,7 +72,6 @@ body {
 
 /* --- WINTER THEME: FROSTED ICE (GLITCH-FREE) --- */
 [data-theme='winter'] .smart-glass {
-  /* Replace noise with a clean ice-blue specular gradient */
   background-image: linear-gradient(
     135deg, 
     rgba(255, 255, 255, 0.4) 0%, 
@@ -81,14 +79,11 @@ body {
     rgba(186, 230, 253, 0.1) 100%
   ) !important;
   
-  /* Deeper blur for ice texture */
   backdrop-filter: blur(20px) saturate(125%);
   -webkit-backdrop-filter: blur(20px) saturate(125%);
   
-  /* Stronger white border for frosty edges */
   border: 1px solid rgba(255, 255, 255, 0.6) !important;
   
-  /* Inner glow to simulate depth */
   box-shadow: 
     inset 0 1px 1px rgba(255, 255, 255, 0.4),
     inset 0 0 15px rgba(125, 211, 252, 0.1);
@@ -109,11 +104,6 @@ body {
   width: 100% !important;
   height: 100% !important;
   z-index: 1;
-  background-color: var(--theme-map-bg-dark) !important;
-}
-
-:not(.dark) .leaflet-container {
-  background-color: var(--theme-map-bg-light) !important;
 }
 
 .leaflet-popup-content-wrapper {
@@ -122,38 +112,23 @@ body {
   padding: 0 !important;
 }
 
-/* --- MARKERS --- */
+/* --- UPDATED MARKERS (CLEANED) --- */
 .marker-core {
   width: 10px; height: 10px;
   background: rgb(var(--theme-primary));
   box-shadow: 0 0 12px var(--theme-primary-glow);
-  position: relative;
   border: 2px solid #fff;
   border-radius: 50%;
-  z-index: 2;
 }
 
-.pulse-ring {
-  background: rgba(var(--theme-primary), 0.4);
-  position: absolute;
-  width: 100%; height: 100%;
-  border-radius: 50%;
-  animation: marker-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+/* Clean Pulse for Radar Ping */
+@keyframes radarPing { 
+  0%, 100% { stroke-opacity: 0.6; stroke-width: 1px; } 
+  50% { stroke-opacity: 0.2; stroke-width: 2px; } 
 }
 
-@keyframes radar-pulse {
-  0% { stroke-opacity: 0.8; stroke-width: 1px; }
-  50% { stroke-opacity: 0.3; stroke-width: 2px; }
-  100% { stroke-opacity: 0.8; stroke-width: 1px; }
-}
-
-.radar-pulse-ring {
-  animation: radar-pulse 4s ease-in-out infinite;
-}
-
-@keyframes marker-pulse {
-  0% { transform: scale(0.6); opacity: 0.8; }
-  100% { transform: scale(2.6); opacity: 0; }
+.radar-ping {
+  animation: radarPing 3s ease-in-out infinite;
 }
 
 /* --- UI EFFECTS --- */
