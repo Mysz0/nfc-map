@@ -11,10 +11,9 @@
   --theme-bg-glass-dark: rgba(24, 24, 27, 0.75);
   --theme-border-light: rgba(16, 185, 129, 0.15);
   
-  /* --- THE FIX: Title Colors --- */
-  --theme-text-title-light: #18181b; /* zinc-900 */
-  --theme-text-title-dark: #fafafa;  /* zinc-50 */
-  --theme-text-sub-dark: #71717a;    /* zinc-500 */
+  --theme-text-title-light: #18181b; 
+  --theme-text-title-dark: #fafafa;  
+  --theme-text-sub-dark: #71717a;    
   
   --theme-text-light: #064e3b;
   --theme-map-bg-light: #f0fdf4;
@@ -28,9 +27,8 @@
   --theme-bg-glass-dark: rgba(15, 23, 42, 0.8);
   --theme-border-light: rgba(186, 230, 253, 0.4);
   
-  /* --- THE FIX: Winter Title Colors --- */
   --theme-text-title-light: #0c4a6e;
-  --theme-text-title-dark: #f0f9ff;  /* Arctic white */
+  --theme-text-title-dark: #f0f9ff; 
   
   --theme-text-light: #0c4a6e;
   --theme-map-bg-light: #f0f9ff;
@@ -50,7 +48,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-  transition: background-color 0.5s ease;
+  /* UPDATED: Added color and border-color so Winter/Emerald transitions globally */
+  transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease;
 }
 
 /* --- SMART GLASS UTILITY --- */
@@ -59,8 +58,9 @@ body {
   -webkit-backdrop-filter: blur(12px);
   background: var(--theme-bg-glass-light);
   border: 1px solid var(--theme-border-light);
-  color: var(--theme-text-title-light); /* Default titles to dark zinc */
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--theme-text-title-light);
+  /* UPDATED: Set to 0.5s to perfectly match the body transition speed */
+  transition: background 0.5s ease, border-color 0.5s ease, color 0.5s ease;
 }
 
 /* --- THE FIX: Force high-contrast white in Dark Mode --- */
@@ -70,7 +70,6 @@ body {
   color: var(--theme-text-title-dark) !important; 
 }
 
-/* Ensure secondary text stays readable but dim */
 .dark .smart-glass p:not(.font-bold) {
   color: var(--theme-text-sub-dark);
 }
