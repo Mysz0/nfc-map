@@ -141,6 +141,16 @@ body {
   animation: marker-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
 }
 
+@keyframes radar-pulse {
+  0% { stroke-opacity: 0.8; stroke-width: 1px; }
+  50% { stroke-opacity: 0.3; stroke-width: 2px; }
+  100% { stroke-opacity: 0.8; stroke-width: 1px; }
+}
+
+.radar-pulse-ring {
+  animation: radar-pulse 4s ease-in-out infinite;
+}
+
 @keyframes marker-pulse {
   0% { transform: scale(0.6); opacity: 0.8; }
   100% { transform: scale(2.6); opacity: 0; }
