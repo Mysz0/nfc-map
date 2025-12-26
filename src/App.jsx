@@ -16,6 +16,7 @@ import ExploreTab from './components/Tabs/ExploreTab';
 import LeaderboardTab from './components/Tabs/LeaderboardTab';
 import ProfileTab from './components/Tabs/ProfileTab';
 import AdminTab from './components/Tabs/AdminTab';
+import StoreTab from './components/Tabs/StoreTab'; // Ensure this is imported
 import Login from './components/Auth/Login';
 import Toast from './components/UI/Toast';
 import ThemeToggle from './components/UI/ThemeToggle';
@@ -51,7 +52,11 @@ export default function App() {
     claimSpot, saveUsername, toggleEmailVisibility,
     removeSpot, resetTimer, addNewSpot, deleteSpotFromDB,
     updateNodeStreak,
-    handleVote,        // Extracted from useGameLogic
+    handleVote,
+    // FIXED: Added these to destructuring so they exist in this scope
+    shopItems,
+    inventory,
+    buyItem,
     customRadius,      
     claimRadius,       
     updateRadius,      
@@ -68,7 +73,7 @@ export default function App() {
     claimRadius
   );
 
-  // Magnetic refs for the interactive buttons
+  // Magnetic refs
   const themeMag = useMagnetic();
   const logoutMag = useMagnetic();
 
@@ -155,7 +160,7 @@ export default function App() {
             claimRadius={claimRadius}
             customRadius={customRadius}
             colors={colors} 
-            onVote={handleVote} // Passing the vote logic to the tab
+            onVote={handleVote}
           />
         )}
         
@@ -174,6 +179,8 @@ export default function App() {
             setAppStyle={setAppStyle} 
           />
         )}
+
+        {/* FIXED: Prop names now match the destructured logic */}
         {activeTab === 'store' && (
           <StoreTab 
             totalPoints={totalPoints} 
@@ -184,6 +191,7 @@ export default function App() {
             onBuy={buyItem}
           />
         )} 
+
         {activeTab === 'dev' && isAdmin && (
           <AdminTab 
             spots={spots} 
