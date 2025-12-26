@@ -15,17 +15,16 @@
   --theme-text-light: #064e3b;
   --theme-map-bg-light: #f0fdf4;
   --theme-map-bg-dark: #09090b;
-
-  /* NEW: Global Transition Speed Variable */
   --trans-speed: 0.5s;
 }
 
 [data-theme='winter'] {
   --theme-primary: 125, 211, 252;
   --theme-primary-glow: rgba(186, 230, 253, 0.9);
-  --theme-bg-glass-light: rgba(240, 249, 255, 0.5);
-  --theme-bg-glass-dark: rgba(15, 23, 42, 0.8);
-  --theme-border-light: rgba(186, 230, 253, 0.4);
+  /* Slightly more opaque for the frost effect */
+  --theme-bg-glass-light: rgba(240, 249, 255, 0.75);
+  --theme-bg-glass-dark: rgba(7, 18, 38, 0.85);
+  --theme-border-light: rgba(255, 255, 255, 0.4);
   --theme-text-title-light: #0c4a6e;
   --theme-text-title-dark: #f0f9ff; 
   --theme-text-light: #0c4a6e;
@@ -33,28 +32,24 @@
   --theme-map-bg-dark: #020617;
 }
 
-/* --- BASE STYLES & GLOBAL ANIMATION --- */
+/* --- BASE STYLES --- */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  /* THE FIX: Use the variable. Default is 0.5s for theme swaps */
   transition: background-color var(--trans-speed) ease, 
               border-color var(--trans-speed) ease, 
               color var(--trans-speed) ease,
               box-shadow var(--trans-speed) ease;
 }
 
-/* THE INTERACTION FIX: Force instant speed when hovering/clicking */
 button:hover, button:active, a:hover, .interactive:hover {
   --trans-speed: 0.1s !important;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
 }
 
@@ -65,6 +60,8 @@ body {
   background: var(--theme-bg-glass-light);
   border: 1px solid var(--theme-border-light);
   color: var(--theme-text-title-light);
+  position: relative;
+  overflow: hidden;
 }
 
 .dark .smart-glass {
@@ -73,24 +70,49 @@ body {
   color: var(--theme-text-title-dark) !important; 
 }
 
-.dark .smart-glass p:not(.font-bold) {
-  color: var(--theme-text-sub-dark);
-}
-
+/* --- WINTER FROST EFFECT (REPLACES GRAIN) --- */
 [data-theme='winter'] .smart-glass {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+  /* No more noise filter - using a frosted ice gradient */
+  background-image: linear-gradient(
+    135deg, 
+    rgba(255, 255, 255, 0.3) 0%, 
+    rgba(255, 255, 255, 0) 50%
+  );
+  backdrop-filter: blur(20px) saturate(120%);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: inset 0 0 20px rgba(125, 211, 252, 0.15);
 }
 
-/* --- LEAFLET & MAP UI --- */
-.leaflet-control-attribution, .leaflet-control-zoom { display: none !important; }
+/* Shimmering ice light-hit effect */
+[data-theme='winter'] .smart-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    45deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.15) 50%,
+    transparent 80%
+  );
+  background-size: 250% 250%;
+  pointer-events: none;
+  animation: ice-glint 10s infinite ease-in-out;
+}
 
+@keyframes ice-glint {
+  0% { background-position: -100% -100%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: -100% -100%; }
+}
+
+/* --- LEAFLET & POPUPS --- */
+.leaflet-control-attribution, .leaflet-control-zoom { display: none !important; }
 .leaflet-container {
   width: 100% !important;
   height: 100% !important;
   z-index: 1;
-  outline: none;
   background-color: var(--theme-map-bg-dark) !important;
-  transition: none !important; 
 }
 
 :not(.dark) .leaflet-container {
@@ -104,17 +126,6 @@ body {
 }
 
 .leaflet-popup-tip-container { display: none !important; }
-
-.custom-popup-box {
-  @apply smart-glass p-4 rounded-2xl shadow-2xl;
-  min-width: 140px;
-  animation: popup-slide 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes popup-slide {
-  from { transform: translateY(8px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
 
 /* --- MARKERS --- */
 .marker-core {
@@ -152,42 +163,9 @@ body {
   transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease;
 }
 
-/* --- ANIMATED BORDERS --- */
-.collection-card {
-  position: relative;
-  background-clip: padding-box;
-  border: 1px solid transparent;
-}
-
-.collection-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 2.2rem;
-  padding: 2px;
-  background: linear-gradient(45deg, transparent, transparent);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  transition: all 0.8s ease;
-  opacity: 0;
-}
-
-.collection-card:hover::before {
-  opacity: 1;
-  background: linear-gradient(45deg, rgb(var(--theme-primary)), #fff, transparent, rgb(var(--theme-primary)));
-  background-size: 200% 200%;
-  animation: move-gradient 6s linear infinite;
-}
-
-@keyframes move-gradient {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 200% 50%; }
-}
-
 /* --- SCROLLBAR --- */
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(var(--theme-primary), 0.2);
   border-radius: 10px;
