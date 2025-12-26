@@ -10,8 +10,8 @@
   --theme-bg-glass-dark: rgba(24, 24, 27, 0.75);
   --theme-border-light: rgba(16, 185, 129, 0.15);
   --theme-text-title-light: #18181b; 
-  --theme-text-title-dark: #fafafa;   
-  --theme-text-sub-dark: #71717a;    
+  --theme-text-title-dark: #fafafa;    
+  --theme-text-sub-dark: #71717a;     
   --theme-text-light: #064e3b;
   --theme-map-bg-light: #f0fdf4;
   --theme-map-bg-dark: #09090b;
@@ -50,6 +50,11 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  background-color: var(--theme-map-bg-light);
+}
+
+.dark body {
+  background-color: var(--theme-map-bg-dark);
 }
 
 /* --- SMART GLASS UTILITY --- */
@@ -70,7 +75,7 @@ body {
   color: var(--theme-text-title-dark) !important; 
 }
 
-/* --- WINTER THEME --- */
+/* --- WINTER THEME SPECIFICS --- */
 [data-theme='winter'] .smart-glass {
   background-image: linear-gradient(
     135deg, 
@@ -101,6 +106,7 @@ body {
   width: 100% !important;
   height: 100% !important;
   z-index: 1;
+  background: transparent !important;
 }
 
 .leaflet-popup-content-wrapper {
@@ -109,7 +115,7 @@ body {
   padding: 0 !important;
 }
 
-/* --- CENTERED RADAR ICONS & MARKERS --- */
+/* --- MARKERS --- */
 .custom-div-icon { 
   background: none !important; 
   border: none !important; 
@@ -118,47 +124,22 @@ body {
   justify-content: center !important; 
 }
 
-.marker-pin-user { 
-  position: absolute; 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-}
-
+.marker-pin-user { position: absolute; display: flex; align-items: center; justify-content: center; }
 .marker-pin-user .dot { 
-  width: 8px; height: 8px; 
-  background: rgb(var(--theme-primary)); 
-  border: 1.5px solid white; 
-  border-radius: 50%; 
-  z-index: 10; 
-  box-shadow: 0 0 10px rgb(var(--theme-primary)); 
+  width: 8px; height: 8px; background: rgb(var(--theme-primary)); 
+  border: 1.5px solid white; border-radius: 50%; z-index: 10; box-shadow: 0 0 10px rgb(var(--theme-primary)); 
 }
 .marker-pin-user .pulse { 
-  position: absolute; 
-  width: 20px; height: 20px; 
-  border-radius: 50%; 
-  background: rgba(var(--theme-primary), 0.25); 
-  animation: user-pulse 2s infinite; 
+  position: absolute; width: 20px; height: 20px; border-radius: 50%; 
+  background: rgba(var(--theme-primary), 0.25); animation: user-pulse 2s infinite; 
 }
 
-.marker-pin-spot {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
+.marker-pin-spot { position: absolute; display: flex; align-items: center; justify-content: center; }
 .marker-pin-spot .dot { 
-  width: 8px; height: 8px; 
-  background: #71717a; 
-  border: 1.5px solid white; 
-  border-radius: 50%; 
-  transition: all 0.4s ease;
+  width: 8px; height: 8px; background: #71717a; border: 1.5px solid white; border-radius: 50%; transition: all 0.4s ease;
 }
-
 .marker-pin-spot.unlocked .dot { 
-  background: rgb(var(--theme-primary)) !important; 
-  box-shadow: 0 0 8px rgb(var(--theme-primary)); 
+  background: rgb(var(--theme-primary)) !important; box-shadow: 0 0 8px rgb(var(--theme-primary)); 
 }
 
 @keyframes user-pulse {
@@ -166,19 +147,21 @@ body {
   100% { transform: scale(2.2); opacity: 0; }
 }
 
-/* --- ANIMATED SCAN CIRCLE (THE SPINNING FIX) --- */
+/* --- THE RADAR FIX (PINCH & SPIN) --- */
 .radar-ping { 
-  /* Combined animations: Sweep (dash crawl), Breathe (pulsing), Spin (rotation) */
+  /* Non-scaling stroke keeps dashes from getting messy when zooming */
+  vector-effect: non-scaling-stroke;
+  
+  /* Centers rotation on the circle's own coordinates */
+  transform-origin: center;
+  transform-box: fill-box; 
+  
   animation: 
     radarSweep 8s linear infinite, 
     radarBreathe 4s ease-in-out infinite,
-    radarSpin 6s linear infinite; 
+    radarSpin 10s linear infinite; 
     
   stroke-linecap: round;
-  
-  /* CRITICAL: Force rotation around the center of the circle path */
-  transform-origin: center;
-  transform-box: fill-box; 
 }
 
 @keyframes radarSpin {
@@ -196,7 +179,7 @@ body {
   50% { stroke-opacity: 0.2; stroke-width: 3px; } 
 }
 
-/* --- UI EFFECTS --- */
+/* --- UI EFFECTS & MISC --- */
 .mist-overlay {
   background: radial-gradient(circle at top, rgba(var(--theme-primary), 0.15) 0%, transparent 60%);
 }

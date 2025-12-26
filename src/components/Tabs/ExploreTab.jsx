@@ -79,15 +79,14 @@ export default function ExploreTab({
     return { lat: userLocation.lat, lng: userLocation.lng };
   }, [userLocation?.lat, userLocation?.lng]);
 
-  // Default fallback if GPS is totally disabled
   const fallbackCenter = [40.7306, -73.9352];
 
   const userIcon = useMemo(() => L.divIcon({
     className: 'custom-div-icon',
     html: `<div class="marker-pin-user">
-             <div class="pulse"></div>
-             <div class="dot"></div>
-           </div>`,
+              <div class="pulse"></div>
+              <div class="dot"></div>
+            </div>`,
     iconSize: [0, 0],
     iconAnchor: [0, 0]
   }), []);
@@ -95,8 +94,8 @@ export default function ExploreTab({
   const spotIcon = (isUnlocked) => L.divIcon({
     className: 'custom-div-icon',
     html: `<div class="marker-pin-spot ${isUnlocked ? 'unlocked' : ''}">
-             <div class="dot"></div>
-           </div>`,
+              <div class="dot"></div>
+            </div>`,
     iconSize: [0, 0],
     iconAnchor: [0, 0]
   });
@@ -105,9 +104,6 @@ export default function ExploreTab({
     <div className={`relative w-full h-[70vh] rounded-[3rem] overflow-hidden border transition-all duration-700 ${
       isDark ? 'border-white/5 bg-zinc-950' : 'border-[rgb(var(--theme-primary))]/10 bg-emerald-50'
     }`}>
-      {/* Note: center here only works for the FIRST render. 
-          The MapRecenter component below handles the actual move to user location.
-      */}
       <MapContainer 
         center={stableUserLoc ? [stableUserLoc.lat, stableUserLoc.lng] : fallbackCenter} 
         zoom={15} 
@@ -127,7 +123,6 @@ export default function ExploreTab({
 
         <MapInterface 
           stableUserLoc={stableUserLoc} 
-          isDark={isDark} 
           claimRadius={claimRadius} 
           customRadius={customRadius} 
         />
@@ -153,7 +148,7 @@ export default function ExploreTab({
                 color: 'rgb(var(--theme-primary))',
                 fillColor: 'transparent',
                 dashArray: '20, 30',
-                className: 'radar-ping',
+                className: 'radar-ping', /* Hooks into the rotation and scale fix */
                 interactive: false
               }}
             />
