@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
-import { Target, Lock, ShieldCheck } from 'lucide-react';
+import { Target } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
+// --- UTILS ---
 function getDistance(lat1, lon1, lat2, lon2) {
   const R = 6371e3;
   const φ1 = lat1 * Math.PI / 180;
@@ -16,6 +17,7 @@ function getDistance(lat1, lon1, lat2, lon2) {
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
+// --- MAP UI CONTROLS ---
 function MapInterface({ coords, stableUserLoc, isDark, claimRadius, scanRadius }) {
   const map = useMap();
   const lastPos = useRef(null);
@@ -71,6 +73,7 @@ function MapInterface({ coords, stableUserLoc, isDark, claimRadius, scanRadius }
   );
 }
 
+// --- MAIN COMPONENT ---
 export default function ExploreTab({ 
   spots = {}, 
   unlockedSpots = [], 
@@ -91,19 +94,19 @@ export default function ExploreTab({
 
   const initialCenter = useMemo(() => stableUserLoc ? [stableUserLoc.lat, stableUserLoc.lng] : [40.7306, -73.9352], []);
 
-  // Perfectly Centered Icons
+  // Center fix: Explicitly set icon size and anchor to be exactly half
   const userIcon = useMemo(() => L.divIcon({
     className: 'custom-div-icon',
     html: `<div class="marker-pin-user"><div class="dot"></div><div class="pulse"></div></div>`,
-    iconSize: [40, 40],
-    iconAnchor: [20, 20]
+    iconSize: [20, 20], 
+    iconAnchor: [10, 10]
   }), []);
 
   const spotIcon = (isUnlocked) => L.divIcon({
     className: 'custom-div-icon',
     html: `<div class="marker-pin-spot ${isUnlocked ? 'unlocked' : ''}"><div class="dot"></div></div>`,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15]
+    iconSize: [16, 16],
+    iconAnchor: [8, 8]
   });
 
   return (
@@ -113,27 +116,55 @@ export default function ExploreTab({
       <style>{`
         .leaflet-container { height: 100% !important; width: 100% !important; background: transparent !important; }
         
-        /* Icon Alignment */
-        .custom-div-icon { background: none !important; border: none !important; display: flex; align-items: center; justify-content: center; }
+        /* THE ALIGNMENT FIX */
+        .custom-div-icon { 
+          background: none !important; 
+          border: none !important; 
+          display: flex !important; 
+          align-items: center !important; 
+          justify-content: center !important; 
+          pointer-events: none;
+        }
         
-        /* User Marker */
-        .marker-pin-user { position: relative; display: flex; align-items: center; justify-content: center; }
-        .marker-pin-user .dot { width: 12px; height: 12px; background: rgb(var(--theme-primary)); border: 2px solid white; border-radius: 50%; z-index: 10; box-shadow: 0 0 15px rgb(var(--theme-primary)); }
-        .marker-pin-user .pulse { position: absolute; width: 30px; height: 30px; border-radius: 50%; background: rgba(var(--theme-primary), 0.3); animation: user-pulse 2s infinite; }
+        .marker-pin-user { position: relative; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+        .marker-pin-user .dot { 
+          width: 8px; height: 8px; 
+          background: rgb(var(--theme-primary)); 
+          border: 1.5px solid white; 
+          border-radius: 50%; 
+          z-index: 10; 
+          box-shadow: 0 0 10px rgb(var(--theme-primary)); 
+        }
+        .marker-pin-user .pulse { 
+          position: absolute; 
+          width: 20px; height: 20px; 
+          border-radius: 50%; 
+          background: rgba(var(--theme-primary), 0.3); 
+          animation: user-pulse 2s infinite; 
+        }
         
-        /* Spot Markers */
-        .marker-pin-spot .dot { width: 10px; height: 10px; background: #71717a; border: 2px solid white; border-radius: 50%; transition: all 0.3s ease; }
-        .marker-pin-spot.unlocked .dot { background: #22c55e; box-shadow: 0 0 10px #22c55e; }
-
-        @keyframes user-pulse {
-          0% { transform: scale(0.5); opacity: 0.8; }
-          100% { transform: scale(2); opacity: 0; }
+        /* Spot Markers: Dynamic Colors */
+        .marker-pin-spot { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; }
+        .marker-pin-spot .dot { 
+          width: 8px; height: 8px; 
+          background: #71717a; 
+          border: 1.5px solid white; 
+          border-radius: 50%; 
+          transition: all 0.4s ease; 
+        }
+        .marker-pin-spot.unlocked .dot { 
+          background: rgb(var(--theme-primary)) !important; 
+          box-shadow: 0 0 10px rgb(var(--theme-primary)); 
         }
 
-        /* Radar Animation */
+        @keyframes user-pulse {
+          0% { transform: scale(0.8); opacity: 0.6; }
+          100% { transform: scale(2.2); opacity: 0; }
+        }
+
         .radar-ping { animation: radarPing 4s ease-in-out infinite; }
         @keyframes radarPing { 
-          0%, 100% { stroke-opacity: 0.7; stroke-width: 1px; } 
+          0%, 100% { stroke-opacity: 0.7; stroke-width: 1.5px; } 
           50% { stroke-opacity: 0.2; stroke-width: 2.5px; } 
         }
 
@@ -158,7 +189,7 @@ export default function ExploreTab({
 
         {stableUserLoc && (
           <>
-            {/* 1. CLAIM RING (Solid-ish) */}
+            {/* INNER CLAIM RING */}
             <Circle
               center={[stableUserLoc.lat, stableUserLoc.lng]}
               radius={claimRadius}
@@ -171,7 +202,7 @@ export default function ExploreTab({
               }}
             />
             
-            {/* 2. SCAN RING (Dashed + Pulsing Animation) */}
+            {/* OUTER SCAN RADAR */}
             <Circle
               center={[stableUserLoc.lat, stableUserLoc.lng]}
               radius={scanRadius}
@@ -179,7 +210,7 @@ export default function ExploreTab({
                 color: 'rgb(var(--theme-primary))',
                 fillColor: 'transparent',
                 weight: 1.5,
-                dashArray: '12, 12',
+                dashArray: '8, 12',
                 className: 'radar-ping',
                 interactive: false
               }}
@@ -194,7 +225,7 @@ export default function ExploreTab({
             <Popup closeButton={false} offset={[0, -5]}>
               <div className="smart-glass p-3 rounded-2xl border border-white/10 min-w-[140px] shadow-2xl">
                 <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400 mb-1">Node</p>
-                <p className="text-xs font-bold text-white">{spot.name}</p>
+                <p className="text-xs font-bold text-white truncate">{spot.name}</p>
               </div>
             </Popup>
           </Marker>
