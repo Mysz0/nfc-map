@@ -56,6 +56,9 @@ export default function AdminTab({
   const [searchQuery, setSearchQuery] = useState('');
   const [purgeTarget, setPurgeTarget] = useState(null);
 
+  // --- ID GENERATOR ADDED ---
+  const generateRandomId = () => `spot-${Math.random().toString(16).slice(2, 10)}`;
+
   const handleUseMyLocation = () => {
     if (userLocation) {
       setNewSpot(prev => ({ 
@@ -71,7 +74,10 @@ export default function AdminTab({
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!newSpot.name || !newSpot.lat || !newSpot.lng) return;
+    
+    // --- UPDATED TO SEND RANDOM ID ---
     addNewSpot({
+      id: generateRandomId(),
       name: newSpot.name,
       lat: parseFloat(newSpot.lat),
       lng: parseFloat(newSpot.lng),
@@ -226,8 +232,8 @@ export default function AdminTab({
                   <div className="flex-1 min-w-0 pr-4">
                     <p className={`text-xs font-bold tracking-tight truncate ${isDark ? 'text-white' : 'text-zinc-800'}`}>{spot.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                       <MapPin size={8} className="text-zinc-500" />
-                       <p className="text-[7px] font-mono text-zinc-500 uppercase truncate">{spot.id}</p>
+                        <MapPin size={8} className="text-zinc-500" />
+                        <p className="text-[7px] font-mono text-zinc-500 uppercase truncate">{spot.id}</p>
                     </div>
                   </div>
                   <span className="text-[9px] font-black text-[rgb(var(--theme-primary))] px-2 py-1 bg-[rgb(var(--theme-primary))]/10 rounded-lg whitespace-nowrap">{spot.points} PTS</span>
