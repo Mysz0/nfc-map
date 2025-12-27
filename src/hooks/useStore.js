@@ -19,7 +19,7 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
     const diff = expiryTime - now;
 
     if (diff <= 0) {
-      deleteExpiredItem(item.id);
+      deactivateExpiredItem(item.id);
       return { timeLeft: "EXPIRED", progress: 0 };
     }
 
@@ -31,12 +31,24 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
     return { timeLeft: `${h}h ${m}m ${s}s`, progress };
   };
 
-  const deleteExpiredItem = async (inventoryId) => {
+  const deactivateExpiredItem = async (inventoryId) => {
     try {
-      await supabase.from('user_inventory').delete().eq('id', inventoryId);
-      setInventory(prev => prev.filter(i => i.id !== inventoryId));
+      // Just deactivate, don't delete - keep the row with quantity
+      await supabase
+        .from('user_inventory')
+        .update({ 
+          is_active: false, 
+          activated_at: null 
+        })
+        .eq('id', inventoryId);
+      
+      setInventory(prev => prev.map(i => 
+        i.id === inventoryId 
+          ? { ...i, is_active: false, activated_at: null, timeLeft: null, progress: 100 }
+          : i
+      ));
     } catch (err) {
-      console.error("Auto-delete failed:", err);
+      console.error("Auto-deactivate failed:", err);
     }
   };
 
@@ -66,18 +78,17 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setInventory(prevInv => {
-        const updated = prevInv.map(item => {
+      setInventory(prevInv => 
+        prevInv.map(item => {
           if (item.is_active) {
             return { ...item, ...getItemStatus(item) };
           }
           return item;
-        });
-        return updated.filter(item => item.timeLeft !== "EXPIRED");
-      });
+        })
+      );
     }, 1000);
     return () => clearInterval(timer);
-  }, [inventory.length]);
+  }, []);
 
   const buyItem = async (item) => {
     if (totalPoints < item.price || loading) return;
@@ -91,13 +102,17 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
 
       if (pointsError) throw pointsError;
 
-      // Add to inventory
-      const existing = inventory.find(i => i.item_id === item.id && !i.is_active);
+      // Check if user already has this item (active or inactive)
+      const existing = inventory.find(i => i.item_id === item.id);
+      
       if (existing) {
-        await supabase.from('user_inventory')
-          .update({ quantity: (existing.quantity || 1) + 1 })
+        // Just increment quantity on the existing row
+        await supabase
+          .from('user_inventory')
+          .update({ quantity: existing.quantity + 1 })
           .eq('id', existing.id);
       } else {
+        // Create new row
         await supabase.from('user_inventory').insert({
           user_id: user.id,
           item_id: item.id,
@@ -121,87 +136,57 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
   const activateItem = async (inventoryId) => {
     if (!user || loading || isActivating.current) return;
     
-    const itemToActivate = inventory.find(inv => inv.id === inventoryId);
-    if (!itemToActivate || itemToActivate.is_active) return;
+    const item = inventory.find(inv => inv.id === inventoryId);
+    if (!item || item.quantity < 1) return;
 
     isActivating.current = true;
     setLoading(true);
 
+    // Optimistically decrement quantity
+    setInventory(prev => prev.map(inv => 
+      inv.id === inventoryId 
+        ? { ...inv, quantity: inv.quantity - 1 }
+        : inv
+    ));
+
     try {
-      // Find existing active boost of same type
-      const activeRow = inventory.find(
-        inv => inv.item_id === itemToActivate.item_id && inv.is_active
-      );
+      const boostDurationMs = item.shop_items.duration_hours * 60 * 60 * 1000;
 
-      const boostDurationMs = itemToActivate.shop_items.duration_hours * 60 * 60 * 1000;
-
-      if (activeRow) {
-        // EXTEND EXISTING ACTIVE BOOST
-        const currentActivation = new Date(activeRow.activated_at).getTime();
-        const currentExpiry = currentActivation + (itemToActivate.shop_items.duration_hours * 60 * 60 * 1000);
+      if (item.is_active) {
+        // === EXTEND EXISTING BOOST ===
+        const currentActivation = new Date(item.activated_at).getTime();
+        const currentExpiry = currentActivation + boostDurationMs;
         const now = new Date().getTime();
         const remainingTime = Math.max(0, currentExpiry - now);
         
-        // New expiry = remaining time + new boost duration
-        const newActivationTime = new Date(now + remainingTime + boostDurationMs);
+        // New expiry = current expiry + new boost duration
+        const newActivationTime = new Date(now - boostDurationMs + remainingTime + boostDurationMs);
 
-        // Update the active row's activation time to extend it
-        const { error: updateError } = await supabase
+        const { error } = await supabase
           .from('user_inventory')
-          .update({ activated_at: newActivationTime.toISOString() })
-          .eq('id', activeRow.id);
+          .update({ 
+            quantity: item.quantity - 1,
+            activated_at: newActivationTime.toISOString()
+          })
+          .eq('id', inventoryId);
 
-        if (updateError) throw updateError;
-
-        // Remove/decrement the consumed item
-        if (itemToActivate.quantity > 1) {
-          await supabase.from('user_inventory')
-            .update({ quantity: itemToActivate.quantity - 1 })
-            .eq('id', inventoryId);
-        } else {
-          await supabase.from('user_inventory').delete().eq('id', inventoryId);
-        }
-
-        showToast(`${itemToActivate.shop_items.name} Extended!`, "success");
+        if (error) throw error;
+        showToast(`${item.shop_items.name} Extended!`, "success");
       } else {
-        // ACTIVATE NEW BOOST (no existing active boost)
-        
-        // First, consume the item from inventory
-        if (itemToActivate.quantity > 1) {
-          // Decrement quantity
-          const { error: decrementError } = await supabase
-            .from('user_inventory')
-            .update({ quantity: itemToActivate.quantity - 1 })
-            .eq('id', inventoryId);
-          
-          if (decrementError) throw decrementError;
-        } else {
-          // Delete the item since quantity will be 0
-          const { error: deleteError } = await supabase
-            .from('user_inventory')
-            .delete()
-            .eq('id', inventoryId);
-          
-          if (deleteError) throw deleteError;
-        }
-
-        // Then create a NEW active boost row
-        const { error: insertError } = await supabase
+        // === ACTIVATE BOOST ===
+        const { error } = await supabase
           .from('user_inventory')
-          .insert({
-            user_id: user.id,
-            item_id: itemToActivate.item_id,
-            quantity: 1,
+          .update({
+            quantity: item.quantity - 1,
             is_active: true,
             activated_at: new Date().toISOString()
-          });
+          })
+          .eq('id', inventoryId);
 
-        if (insertError) throw insertError;
-
-        showToast(`${itemToActivate.shop_items.name} Activated!`, "success");
+        if (error) throw error;
+        showToast(`${item.shop_items.name} Activated!`, "success");
       }
 
-      // Refresh inventory from database
       await fetchData();
     } catch (err) {
       console.error("Activation error:", err);
