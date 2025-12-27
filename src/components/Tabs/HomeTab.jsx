@@ -84,7 +84,6 @@ export default function HomeTab({
       <div className="flex flex-col gap-3">
         {(isNearSpot && activeSpotId) ? (
           <div className="flex flex-col gap-3 animate-in zoom-in-95 duration-500">
-            {/* Added node-card-animate to the active signal card */}
             <div className="node-card-animate smart-glass p-5 rounded-[2.5rem] flex items-center gap-3">
               <div className={`${
                 isLoggedToday ? 'bg-zinc-800' : canClaim ? 'bg-[rgb(var(--theme-primary))] shadow-[0_0_20px_var(--theme-primary-glow)]' : 'bg-orange-500'
@@ -95,7 +94,8 @@ export default function HomeTab({
                 <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${isLoggedToday ? 'opacity-40' : 'text-[rgb(var(--theme-primary))]'}`}>
                   {isLoggedToday ? "Offline" : "Live Signal"}
                 </p>
-                <p className="text-xs truncate font-bold uppercase tracking-tight text-white">
+                {/* FIXED COLOR HERE */}
+                <p className="text-xs truncate font-bold uppercase tracking-tight text-[var(--theme-text-title-light)] dark:text-[var(--theme-text-title-dark)]">
                   {currentSpot?.name}
                 </p>
               </div>
@@ -135,7 +135,6 @@ export default function HomeTab({
             </button>
           </div>
         ) : (
-          /* "Scanning" Placeholder also gets the animate class */
           <div className="node-card-animate smart-glass p-10 rounded-[3rem] group">
              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(var(--theme-primary),0.1)_0%,transparent_70%)] animate-pulse" />
              <div className="relative flex flex-col items-center justify-center">
@@ -210,14 +209,14 @@ export default function HomeTab({
                   {isReadyLocal && (
                     <div className="absolute -left-1 top-4 bottom-4 w-1 bg-[rgb(var(--theme-primary))] rounded-full z-10 shadow-[0_0_10px_var(--theme-primary-glow)]" />
                   )}
-                  {/* Clean node-card-animate usage */}
                   <div className="node-card-animate smart-glass p-5 rounded-[2.2rem] flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${rank.bg} ${rank.color}`}>
                         {node.streakCount >= 10 ? <Trophy size={18} /> : node.streakCount > 1 ? <Flame size={18} fill="currentColor" /> : <CheckCircle2 size={18} />}
                       </div>
                       <div>
-                        <p className="font-bold text-sm leading-none tracking-tight text-white">
+                        {/* FIXED COLOR HERE */}
+                        <p className="font-bold text-sm leading-none tracking-tight text-[var(--theme-text-title-light)] dark:text-[var(--theme-text-title-dark)]">
                           {node.name}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
@@ -235,7 +234,8 @@ export default function HomeTab({
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-[11px] font-black text-white">
+                      {/* FIXED COLOR HERE */}
+                      <p className="text-[11px] font-black text-[var(--theme-text-title-light)] dark:text-[var(--theme-text-title-dark)]">
                         +{node.points}XP
                       </p>
                     </div>
