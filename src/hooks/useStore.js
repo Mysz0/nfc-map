@@ -76,14 +76,13 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [inventory.length]); 
+  }, [inventory.length]);
 
   const buyItem = async (item) => {
-    if (totalPoints < item.price) return showToast("Not enough XP", "error");
+    if (totalPoints < item.price || loading) return;
     setLoading(true);
     try {
       const existing = inventory.find(i => i.item_id === item.id && !i.is_active);
-      
       if (existing) {
         await supabase.from('user_inventory')
           .update({ quantity: (existing.quantity || 1) + 1 })
@@ -96,7 +95,6 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
           is_active: false
         });
       }
-
       setTotalPoints(prev => prev - item.price);
       showToast(`Purchased ${item.name}!`, "success");
       await fetchData();
@@ -108,31 +106,31 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
   };
 
   const activateItem = async (inventoryId) => {
-    if (!user) return;
+    if (!user || loading) return; // Locked while loading to prevent spam
+    
     const itemToActivate = inventory.find(inv => inv.id === inventoryId);
     if (!itemToActivate || itemToActivate.is_active) return;
 
+    setLoading(true); // Lock the UI immediately
+
     try {
-      // 1. Check if the SAME type of item is already active
-      const alreadyActive = inventory.find(
+      const activeRow = inventory.find(
         inv => inv.item_id === itemToActivate.item_id && inv.is_active
       );
 
-      if (alreadyActive) {
-        // STACKING TIME LOGIC:
-        const addedMs = itemToActivate.shop_items.duration_hours * 60 * 60 * 1000;
-        
-        // Push the activation date forward by the duration of the new boost
-        // effectively adding time to the existing countdown
-        const currentActivation = new Date(alreadyActive.activated_at).getTime();
-        const newActivationDate = new Date(currentActivation + addedMs);
+      const boostDurationMs = itemToActivate.shop_items.duration_hours * 60 * 60 * 1000;
+
+      if (activeRow) {
+        // CASE: Add time to existing active boost
+        const currentActivation = new Date(activeRow.activated_at).getTime();
+        const newActivationDate = new Date(currentActivation + boostDurationMs);
 
         await supabase
           .from('user_inventory')
           .update({ activated_at: newActivationDate.toISOString() })
-          .eq('id', alreadyActive.id);
+          .eq('id', activeRow.id);
 
-        // Consume the item (decrement quantity or delete)
+        // Deduct from the inventory stack
         if (itemToActivate.quantity > 1) {
           await supabase.from('user_inventory')
             .update({ quantity: itemToActivate.quantity - 1 })
@@ -140,12 +138,15 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
         } else {
           await supabase.from('user_inventory').delete().eq('id', inventoryId);
         }
-        
-        showToast(`${itemToActivate.shop_items.name} duration extended!`, "success");
+        showToast(`${itemToActivate.shop_items.name} Extended!`, "success");
       } else {
-        // FIRST ACTIVATION:
+        // CASE: First time activation
         if (itemToActivate.quantity > 1) {
-          await supabase.from('user_inventory').update({ quantity: itemToActivate.quantity - 1 }).eq('id', itemToActivate.id);
+          // Take one from stack, create new active row
+          await supabase.from('user_inventory')
+            .update({ quantity: itemToActivate.quantity - 1 })
+            .eq('id', itemToActivate.id);
+
           await supabase.from('user_inventory').insert({
             user_id: user.id,
             item_id: itemToActivate.item_id,
@@ -154,18 +155,25 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
             activated_at: new Date().toISOString()
           });
         } else {
-          await supabase.from('user_inventory').update({ 
-            is_active: true, 
-            activated_at: new Date().toISOString() 
-          }).eq('id', inventoryId);
+          // Single item: activate it
+          await supabase.from('user_inventory')
+            .update({ 
+              is_active: true, 
+              activated_at: new Date().toISOString() 
+            })
+            .eq('id', inventoryId);
         }
-        showToast(`${itemToActivate.shop_items.name} activated!`, "success");
+        showToast(`${itemToActivate.shop_items.name} Activated!`, "success");
       }
-
+      
+      // We must await fetchData to refresh the local inventory state 
+      // before allowing another click
       await fetchData(); 
     } catch (err) {
       console.error(err);
       showToast("Activation failed", "error");
+    } finally {
+      setLoading(false); // Release the lock
     }
   };
 
