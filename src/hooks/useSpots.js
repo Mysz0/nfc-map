@@ -5,7 +5,8 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
   const [spots, setSpots] = useState({});
   const [unlockedSpots, setUnlockedSpots] = useState([]);
   const [spotStreaks, setSpotStreaks] = useState({});
-  const [activeBoost, setActiveBoost] = useState(null);
+  // Changed to specifically track XP multiplier
+  const [activeXPBoost, setActiveXPBoost] = useState(1); 
 
   const getMultiplier = (days) => {
     if (days >= 10) return 1.5;
@@ -25,6 +26,27 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
               Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
+  };
+
+  const fetchActiveXPBoost = async () => {
+    if (!user) return;
+    try {
+      // FIX: Only fetch the boost with the 'Zap' icon (XP Overdrive)
+      const { data } = await supabase
+        .from('user_inventory')
+        .select('*, shop_items(*)')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .eq('shop_items.icon_name', 'Zap');
+
+      if (data && data.length > 0) {
+        setActiveXPBoost(data[0].shop_items.effect_value);
+      } else {
+        setActiveXPBoost(1); // Default to no boost
+      }
+    } catch (err) {
+      console.error("XP Boost Fetch Error:", err);
+    }
   };
 
   useEffect(() => {
@@ -81,17 +103,8 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
           setSpotStreaks(streakMap);
         }
 
-        const { data: activeInv } = await supabase
-          .from('user_inventory')
-          .select('*, shop_items(*)')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .eq('shop_items.category', 'boost')
-          .maybeSingle();
+        await fetchActiveXPBoost();
 
-        if (activeInv && activeInv.shop_items) {
-          setActiveBoost(activeInv.shop_items.effect_value);
-        }
       } catch (err) {
         console.error("Spot Data Fetch Error:", err);
       }
@@ -99,30 +112,30 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
 
     fetchSpotData();
 
-    // --- REALTIME SUBSCRIPTION START ---
-    const channel = supabase
+    // REALTIME SUBSCRIPTIONS
+    const invChannel = supabase
+      .channel('inv_xp_sync')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'user_inventory', 
+        filter: `user_id=eq.${user.id}` 
+      }, () => fetchActiveXPBoost())
+      .subscribe();
+
+    const spotChannel = supabase
       .channel('public:spots')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'spots' },
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'spots' },
         (payload) => {
           if (payload.eventType === 'INSERT') {
             setSpots((prev) => ({
               ...prev,
-              [payload.new.id]: { 
-                ...payload.new, 
-                upvotes: 0, 
-                downvotes: 0, 
-                myVote: null 
-              }
+              [payload.new.id]: { ...payload.new, upvotes: 0, downvotes: 0, myVote: null }
             }));
           } else if (payload.eventType === 'UPDATE') {
             setSpots((prev) => ({
               ...prev,
-              [payload.new.id]: { 
-                ...prev[payload.new.id], 
-                ...payload.new 
-              }
+              [payload.new.id]: { ...prev[payload.new.id], ...payload.new }
             }));
           } else if (payload.eventType === 'DELETE') {
             setSpots((prev) => {
@@ -136,10 +149,9 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(invChannel);
+      supabase.removeChannel(spotChannel);
     };
-    // --- REALTIME SUBSCRIPTION END ---
-
   }, [user]);
 
   const claimSpot = async (input, customRadius) => {
@@ -147,9 +159,11 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
     const todayStr = new Date().toDateString();
     let spotsToClaim = [];
 
+    const detectionRange = customRadius || 250;
+
     if (typeof input === 'object' && input.lat && input.lng) {
       spotsToClaim = Object.values(spots).filter(spot => 
-        getDistance(input.lat, input.lng, spot.lat, spot.lng) <= (customRadius || 250)
+        getDistance(input.lat, input.lng, spot.lat, spot.lng) <= detectionRange
       );
     } else if (typeof input === 'string' && spots[input]) {
       spotsToClaim = [spots[input]];
@@ -172,8 +186,9 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
       const nextStreak = (Number(info.streak) || 0) + 1;
       const baseMultiplier = getMultiplier(nextStreak);
       
-      const finalMultiplier = activeBoost ? baseMultiplier * activeBoost : baseMultiplier;
-      const earned = Math.floor((spot.points || 0) * finalMultiplier);
+      // FIX: Use activeXPBoost (Defaults to 1, so math never breaks)
+      const finalMultiplier = baseMultiplier * activeXPBoost;
+      const earned = Math.floor((spot.points || 100) * finalMultiplier);
 
       totalEarned += earned;
       claimCount++;
@@ -199,10 +214,7 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
       .from('user_spots')
       .upsert(upsertRows, { onConflict: 'user_id, spot_id' });
 
-    if (upsertError) {
-      console.error("Upsert Error:", upsertError);
-      return showToast("Sync Error", "error");
-    }
+    if (upsertError) return showToast("Sync Error", "error");
 
     const newTotalPoints = (totalPoints || 0) + totalEarned;
     const { error: profileError } = await supabase
@@ -210,16 +222,15 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
       .update({ total_points: newTotalPoints })
       .eq('id', user.id);
 
-    if (profileError) {
-      console.error("Profile Update Error:", profileError);
-      return showToast("Profile Sync Error", "error");
-    }
+    if (profileError) return showToast("Profile Sync Error", "error");
 
     setUnlockedSpots([...newUnlocked]);
     setSpotStreaks({...newSpotStreaks});
     setTotalPoints(newTotalPoints);
 
-    const boostText = activeBoost ? ` (${(activeBoost - 1) * 100}% Boost Active!)` : "";
+    const boostPct = Math.round((activeXPBoost - 1) * 100);
+    const boostText = boostPct > 0 ? ` (${boostPct}% XP Boost active!)` : "";
+    
     showToast(`Secured ${claimCount} nodes: +${totalEarned} XP!${boostText}`, "success");
     
     if (fetchLeaderboard) fetchLeaderboard();
@@ -227,19 +238,13 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
 
   const removeSpot = async (id) => {
     if (!user) return;
-    const { error } = await supabase
-      .from('user_spots')
-      .delete()
-      .eq('user_id', user.id)
-      .eq('spot_id', id);
-
+    const { error } = await supabase.from('user_spots').delete().eq('user_id', user.id).eq('spot_id', id);
     if (!error) {
-      const newUnlocked = unlockedSpots.filter(x => x !== id);
-      setUnlockedSpots([...newUnlocked]);
+      setUnlockedSpots(prev => prev.filter(x => x !== id));
       setSpotStreaks(prev => {
         const next = { ...prev };
         delete next[id];
-        return { ...next };
+        return next;
       });
       showToast("Node Cleared");
     }

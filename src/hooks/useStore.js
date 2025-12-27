@@ -33,7 +33,6 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
 
   const deactivateExpiredItem = async (inventoryId) => {
     try {
-      // Just deactivate, don't delete - keep the row with quantity
       await supabase
         .from('user_inventory')
         .update({ 
@@ -94,7 +93,6 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
     if (totalPoints < item.price || loading) return;
     setLoading(true);
     try {
-      // Update points in database
       const { error: pointsError } = await supabase
         .from('profiles')
         .update({ total_points: totalPoints - item.price })
@@ -102,17 +100,14 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
 
       if (pointsError) throw pointsError;
 
-      // Check if user already has this item (active or inactive)
       const existing = inventory.find(i => i.item_id === item.id);
       
       if (existing) {
-        // Just increment quantity on the existing row
         await supabase
           .from('user_inventory')
           .update({ quantity: existing.quantity + 1 })
           .eq('id', existing.id);
       } else {
-        // Create new row
         await supabase.from('user_inventory').insert({
           user_id: user.id,
           item_id: item.id,
@@ -121,7 +116,6 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
         });
       }
       
-      // Update local state
       setTotalPoints(prev => prev - item.price);
       showToast(`Purchased ${item.name}!`, "success");
       await fetchData();
@@ -142,13 +136,6 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
     isActivating.current = true;
     setLoading(true);
 
-    // Optimistically decrement quantity
-    setInventory(prev => prev.map(inv => 
-      inv.id === inventoryId 
-        ? { ...inv, quantity: inv.quantity - 1 }
-        : inv
-    ));
-
     try {
       const boostDurationMs = item.shop_items.duration_hours * 60 * 60 * 1000;
 
@@ -159,7 +146,7 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
         const now = new Date().getTime();
         const remainingTime = Math.max(0, currentExpiry - now);
         
-        // New expiry = current expiry + new boost duration
+        // Correct mathematical extension: New activation is offset to account for remaining time
         const newActivationTime = new Date(now - boostDurationMs + remainingTime + boostDurationMs);
 
         const { error } = await supabase
