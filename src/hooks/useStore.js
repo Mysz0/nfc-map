@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 
 export function useStore(user, totalPoints, setTotalPoints, showToast) {
   const [shopItems, setShopItems] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const isActivating = useRef(false);
 
   const getItemStatus = (item) => {
     if (!item.is_active || !item.activated_at || !item.shop_items?.duration_hours) {
@@ -106,24 +107,34 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
   };
 
   const activateItem = async (inventoryId) => {
-    if (!user || loading) return;
+    // 1. Double lock check
+    if (!user || loading || isActivating.current) return;
     
     const itemToActivate = inventory.find(inv => inv.id === inventoryId);
     if (!itemToActivate || itemToActivate.is_active) return;
 
+    isActivating.current = true;
     setLoading(true);
 
     try {
-      // Find if there is ALREADY an active row for this item type
       const activeRow = inventory.find(
         inv => inv.item_id === itemToActivate.item_id && inv.is_active
       );
 
       const boostDurationMs = itemToActivate.shop_items.duration_hours * 60 * 60 * 1000;
 
+      // --- STEP 1: CONSUME THE ITEM FIRST ---
+      if (itemToActivate.quantity > 1) {
+        await supabase.from('user_inventory')
+          .update({ quantity: itemToActivate.quantity - 1 })
+          .eq('id', inventoryId);
+      } else {
+        await supabase.from('user_inventory').delete().eq('id', inventoryId);
+      }
+
+      // --- STEP 2: APPLY THE BOOST ---
       if (activeRow) {
-        // --- STACKING TIME ---
-        // Add the new boost duration to the current active row's time
+        // Extend existing
         const currentActivation = new Date(activeRow.activated_at).getTime();
         const newActivationDate = new Date(currentActivation + boostDurationMs);
 
@@ -132,39 +143,16 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
           .update({ activated_at: newActivationDate.toISOString() })
           .eq('id', activeRow.id);
 
-        // Remove 1 from the inventory stack
-        if (itemToActivate.quantity > 1) {
-          await supabase.from('user_inventory')
-            .update({ quantity: itemToActivate.quantity - 1 })
-            .eq('id', itemToActivate.id);
-        } else {
-          await supabase.from('user_inventory').delete().eq('id', inventoryId);
-        }
         showToast(`${itemToActivate.shop_items.name} Extended!`, "success");
       } else {
-        // --- FIRST ACTIVATION ---
-        if (itemToActivate.quantity > 1) {
-          // If a stack exists, keep the stack but create one active row
-          await supabase.from('user_inventory')
-            .update({ quantity: itemToActivate.quantity - 1 })
-            .eq('id', itemToActivate.id);
-
-          await supabase.from('user_inventory').insert({
-            user_id: user.id,
-            item_id: itemToActivate.item_id,
-            quantity: 1,
-            is_active: true,
-            activated_at: new Date().toISOString()
-          });
-        } else {
-          // Flip the only existing row to active
-          await supabase.from('user_inventory')
-            .update({ 
-              is_active: true, 
-              activated_at: new Date().toISOString() 
-            })
-            .eq('id', inventoryId);
-        }
+        // Create new active row
+        await supabase.from('user_inventory').insert({
+          user_id: user.id,
+          item_id: itemToActivate.item_id,
+          quantity: 1,
+          is_active: true,
+          activated_at: new Date().toISOString()
+        });
         showToast(`${itemToActivate.shop_items.name} Activated!`, "success");
       }
 
@@ -173,6 +161,7 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
       console.error(err);
       showToast("Activation failed", "error");
     } finally {
+      isActivating.current = false;
       setLoading(false);
     }
   };
