@@ -70,6 +70,19 @@
   --theme-text-sub-dark: #64748b;
   --theme-map-bg-dark: #020617;
 }
+
+[data-theme='salmon'] {
+  --theme-primary: 255, 140, 115;
+  --theme-primary-glow: rgba(255, 140, 115, 0.8);
+  --theme-bg-glass-light: rgba(255, 245, 242, 0.75); 
+  --theme-bg-glass-dark: rgba(26, 15, 13, 0.9);
+  --theme-border-light: rgba(255, 140, 115, 0.25);
+  --theme-text-title-light: #7c2d12;
+  --theme-text-title-dark: #ffece8;
+  --theme-text-light: #9a3412;
+  --theme-map-bg-light: #fffaf9;
+  --theme-map-bg-dark: #080302;
+}
 /* --- BASE STYLES --- */
 * {
   margin: 0;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Leaf, Snowflake, Waves, Flower, Shell } from 'lucide-react';
+import { Calendar, Leaf, Snowflake, Waves, Flower, Shell, Fish } from 'lucide-react';
 
 export default function ProfileTab({ 
   tempUsername = "", 
@@ -13,12 +13,11 @@ export default function ProfileTab({
   user = null,
   appStyle = 'emerald',
   setAppStyle = () => {},
-  showToast = () => {} // Added this prop
+  showToast = () => {} 
 }) {
   const provider = user?.app_metadata?.provider || 'account';
   const providerName = provider.charAt(0).toUpperCase() + provider.slice(1);
 
-  // PREVENT REDUNDANT UPDATES
   const handleSaveIdentity = () => {
     const currentUsername = user?.username || "";
     if (tempUsername.trim() === currentUsername.trim()) {
@@ -29,13 +28,9 @@ export default function ProfileTab({
   };
 
   const getCooldownInfo = () => {
-    // If lastChange is null (reset by admin), cooldown is over
     if (!lastChange) return null;
-    
     const last = new Date(lastChange).getTime();
     const daysPassed = (new Date().getTime() - last) / (1000 * 60 * 60 * 24);
-    
-    // 7 day cooldown logic
     if (daysPassed >= 7) return null;
     return Math.ceil(7 - daysPassed);
   };
@@ -65,7 +60,7 @@ export default function ProfileTab({
         />
         
         <button 
-          onClick={handleSaveIdentity} // Using our new handler
+          onClick={handleSaveIdentity}
           disabled={!!daysLeft}
           className={`w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all ${
             daysLeft 
@@ -90,9 +85,7 @@ export default function ProfileTab({
           <button 
             onClick={() => setAppStyle('emerald')}
             className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
-              appStyle === 'emerald' 
-              ? 'bg-emerald-500 text-white shadow-lg' 
-              : 'text-zinc-500 hover:text-emerald-500'
+              appStyle === 'emerald' ? 'bg-emerald-500 text-white shadow-lg' : 'text-zinc-500 hover:text-emerald-500'
             }`}
           >
             <Leaf size={14} />
@@ -102,9 +95,7 @@ export default function ProfileTab({
           <button 
             onClick={() => setAppStyle('winter')}
             className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
-              appStyle === 'winter' 
-              ? 'bg-blue-400 text-white shadow-lg' 
-              : 'text-zinc-500 hover:text-blue-400'
+              appStyle === 'winter' ? 'bg-blue-400 text-white shadow-lg' : 'text-zinc-500 hover:text-blue-400'
             }`}
           >
             <Snowflake size={14} />
@@ -114,9 +105,7 @@ export default function ProfileTab({
           <button 
             onClick={() => setAppStyle('koi')}
             className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
-              appStyle === 'koi' 
-              ? 'bg-[#EA4426] text-white shadow-lg' 
-              : 'text-zinc-500 hover:text-[#EA4426]'
+              appStyle === 'koi' ? 'bg-[#EA4426] text-white shadow-lg' : 'text-zinc-500 hover:text-[#EA4426]'
             }`}
           >
             <Waves size={14} />
@@ -126,21 +115,28 @@ export default function ProfileTab({
           <button 
             onClick={() => setAppStyle('sakura')}
             className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
-              appStyle === 'sakura' 
-              ? 'bg-[#F4ACB7] text-white shadow-lg' 
-              : 'text-zinc-500 hover:text-[#F4ACB7]'
+              appStyle === 'sakura' ? 'bg-[#F4ACB7] text-white shadow-lg' : 'text-zinc-500 hover:text-[#F4ACB7]'
             }`}
           >
             <Flower size={14} />
             <span className="text-[10px] font-bold uppercase">Sakura</span>
           </button>
 
+          {/* NEW SALMON THEME */}
+          <button 
+            onClick={() => setAppStyle('salmon')}
+            className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
+              appStyle === 'salmon' ? 'bg-[#FF8C73] text-white shadow-lg' : 'text-zinc-500 hover:text-[#FF8C73]'
+            }`}
+          >
+            <Fish size={14} />
+            <span className="text-[10px] font-bold uppercase">Salmon</span>
+          </button>
+
           <button 
             onClick={() => setAppStyle('abyss')}
-            className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all col-span-2 ${
-              appStyle === 'abyss' 
-              ? 'bg-[#FB923C] text-white shadow-lg' 
-              : 'text-zinc-500 hover:text-[#FB923C]'
+            className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
+              appStyle === 'abyss' ? 'bg-[#FB923C] text-white shadow-lg' : 'text-zinc-500 hover:text-[#FB923C]'
             }`}
           >
             <Shell size={14} />
