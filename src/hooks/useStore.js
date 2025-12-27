@@ -28,7 +28,7 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
     const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     const s = Math.floor((diff % (1000 * 60)) / 1000);
 
-    return { timeLeft: `${h}h ${m}s`, progress }; // Simplified format for clarity
+    return { timeLeft: `${h}h ${m}m ${s}s`, progress };
   };
 
   const deleteExpiredItem = async (inventoryId) => {
@@ -83,6 +83,15 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
     if (totalPoints < item.price || loading) return;
     setLoading(true);
     try {
+      // Update points in database
+      const { error: pointsError } = await supabase
+        .from('profiles')
+        .update({ total_points: totalPoints - item.price })
+        .eq('id', user.id);
+
+      if (pointsError) throw pointsError;
+
+      // Add to inventory
       const existing = inventory.find(i => i.item_id === item.id && !i.is_active);
       if (existing) {
         await supabase.from('user_inventory')
@@ -96,10 +105,13 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
           is_active: false
         });
       }
+      
+      // Update local state
       setTotalPoints(prev => prev - item.price);
       showToast(`Purchased ${item.name}!`, "success");
       await fetchData();
     } catch (err) {
+      console.error("Purchase error:", err);
       showToast("Purchase failed", "error");
     } finally {
       setLoading(false);
@@ -112,62 +124,89 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
     const itemToActivate = inventory.find(inv => inv.id === inventoryId);
     if (!itemToActivate || itemToActivate.is_active) return;
 
-    // --- OPTIMISTIC UI UPDATE ---
-    // Instantly remove/decrement from local state so the user can't click it again
-    setInventory(prev => prev.map(inv => {
-      if (inv.id === inventoryId) {
-        return { ...inv, quantity: inv.quantity - 1 };
-      }
-      return inv;
-    }).filter(inv => inv.quantity > 0 || inv.is_active));
-
     isActivating.current = true;
     setLoading(true);
 
     try {
+      // Find existing active boost of same type
       const activeRow = inventory.find(
         inv => inv.item_id === itemToActivate.item_id && inv.is_active
       );
 
       const boostDurationMs = itemToActivate.shop_items.duration_hours * 60 * 60 * 1000;
 
-      // 1. DATABASE CONSUMPTION
-      if (itemToActivate.quantity > 1) {
-        await supabase.from('user_inventory')
-          .update({ quantity: itemToActivate.quantity - 1 })
-          .eq('id', inventoryId);
-      } else {
-        await supabase.from('user_inventory').delete().eq('id', inventoryId);
-      }
-
-      // 2. DATABASE BOOST APPLICATION
       if (activeRow) {
+        // EXTEND EXISTING ACTIVE BOOST
         const currentActivation = new Date(activeRow.activated_at).getTime();
-        const newActivationDate = new Date(currentActivation + boostDurationMs);
+        const currentExpiry = currentActivation + (itemToActivate.shop_items.duration_hours * 60 * 60 * 1000);
+        const now = new Date().getTime();
+        const remainingTime = Math.max(0, currentExpiry - now);
+        
+        // New expiry = remaining time + new boost duration
+        const newActivationTime = new Date(now + remainingTime + boostDurationMs);
 
-        await supabase
+        // Update the active row's activation time to extend it
+        const { error: updateError } = await supabase
           .from('user_inventory')
-          .update({ activated_at: newActivationDate.toISOString() })
+          .update({ activated_at: newActivationTime.toISOString() })
           .eq('id', activeRow.id);
+
+        if (updateError) throw updateError;
+
+        // Remove/decrement the consumed item
+        if (itemToActivate.quantity > 1) {
+          await supabase.from('user_inventory')
+            .update({ quantity: itemToActivate.quantity - 1 })
+            .eq('id', inventoryId);
+        } else {
+          await supabase.from('user_inventory').delete().eq('id', inventoryId);
+        }
 
         showToast(`${itemToActivate.shop_items.name} Extended!`, "success");
       } else {
-        await supabase.from('user_inventory').insert({
-          user_id: user.id,
-          item_id: itemToActivate.item_id,
-          quantity: 1,
-          is_active: true,
-          activated_at: new Date().toISOString()
-        });
+        // ACTIVATE NEW BOOST (no existing active boost)
+        
+        // First, consume the item from inventory
+        if (itemToActivate.quantity > 1) {
+          // Decrement quantity
+          const { error: decrementError } = await supabase
+            .from('user_inventory')
+            .update({ quantity: itemToActivate.quantity - 1 })
+            .eq('id', inventoryId);
+          
+          if (decrementError) throw decrementError;
+        } else {
+          // Delete the item since quantity will be 0
+          const { error: deleteError } = await supabase
+            .from('user_inventory')
+            .delete()
+            .eq('id', inventoryId);
+          
+          if (deleteError) throw deleteError;
+        }
+
+        // Then create a NEW active boost row
+        const { error: insertError } = await supabase
+          .from('user_inventory')
+          .insert({
+            user_id: user.id,
+            item_id: itemToActivate.item_id,
+            quantity: 1,
+            is_active: true,
+            activated_at: new Date().toISOString()
+          });
+
+        if (insertError) throw insertError;
+
         showToast(`${itemToActivate.shop_items.name} Activated!`, "success");
       }
 
-      // Sync local state with database truth
-      await fetchData(); 
+      // Refresh inventory from database
+      await fetchData();
     } catch (err) {
-      console.error(err);
+      console.error("Activation error:", err);
       showToast("Activation failed", "error");
-      await fetchData(); // Refresh to restore items if DB failed
+      await fetchData();
     } finally {
       isActivating.current = false;
       setLoading(false);
