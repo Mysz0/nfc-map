@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Leaf, Snowflake, Waves, Flower } from 'lucide-react';
+import { Calendar, Leaf, Snowflake, Waves, Flower, Shell } from 'lucide-react';
 
 export default function ProfileTab({ 
   tempUsername = "", 
@@ -18,9 +18,13 @@ export default function ProfileTab({
   const providerName = provider.charAt(0).toUpperCase() + provider.slice(1);
 
   const getCooldownInfo = () => {
+    // If lastChange is null (reset by admin), cooldown is over
     if (!lastChange) return null;
+    
     const last = new Date(lastChange).getTime();
     const daysPassed = (new Date().getTime() - last) / (1000 * 60 * 60 * 24);
+    
+    // 7 day cooldown logic
     if (daysPassed >= 7) return null;
     return Math.ceil(7 - daysPassed);
   };
@@ -55,7 +59,7 @@ export default function ProfileTab({
           className={`w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all ${
             daysLeft 
             ? 'bg-zinc-500/10 text-zinc-500 cursor-not-allowed' 
-            : 'bg-[rgb(var(--theme-primary))] text-white shadow-lg shadow-emerald-500/20 active:scale-95'
+            : 'bg-[rgb(var(--theme-primary))] text-white shadow-lg shadow-[var(--theme-primary-glow)] active:scale-95'
           }`}
         >
           {daysLeft ? 'Identity Locked' : 'Update Identity'}
@@ -118,6 +122,19 @@ export default function ProfileTab({
           >
             <Flower size={14} />
             <span className="text-[10px] font-bold uppercase">Sakura</span>
+          </button>
+
+          {/* NEW ABYSS THEME BUTTON */}
+          <button 
+            onClick={() => setAppStyle('abyss')}
+            className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all col-span-2 ${
+              appStyle === 'abyss' 
+              ? 'bg-[#FB923C] text-white shadow-lg' 
+              : 'text-zinc-500 hover:text-[#FB923C]'
+            }`}
+          >
+            <Shell size={14} />
+            <span className="text-[10px] font-bold uppercase">Abyss</span>
           </button>
         </div>
       </div>

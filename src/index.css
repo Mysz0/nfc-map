@@ -57,6 +57,19 @@
   --theme-map-bg-dark: #020617;
 }
 
+[data-theme='abyss'] {
+  --theme-primary: 251, 146, 60; 
+  --theme-primary-glow: rgba(251, 146, 60, 0.8);
+  --theme-bg-glass-light: rgba(224, 242, 241, 0.7); 
+  --theme-text-title-light: #004d40;
+  --theme-text-light: #00695c;
+  --theme-map-bg-light: #f0fdfa;
+  --theme-bg-glass-dark: rgba(3, 21, 37, 0.9);
+  --theme-border-light: rgba(251, 146, 60, 0.3);
+  --theme-text-title-dark: #e0f2f1;
+  --theme-text-sub-dark: #64748b;
+  --theme-map-bg-dark: #020617;
+}
 /* --- BASE STYLES --- */
 * {
   margin: 0;
