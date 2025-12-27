@@ -43,15 +43,12 @@ export default function LeaderboardTab({ leaderboard, username, colors, spots = 
         leaderboard.map((entry, index) => {
           const isCurrentUser = entry.username === username;
           return (
-            /* Added group and node-card-animate */
+            /* Removed 'border' and 'border-white/5' - CSS now handles the frame */
             <div 
               key={index} 
-              className={`node-card-animate group collection-card ${colors.card} p-5 rounded-[2.2rem] flex items-center justify-between border backdrop-blur-md transition-all duration-500 ${
-                isCurrentUser ? 'border-[rgb(var(--theme-primary))]/30' : 'border-white/5'
-              }`}
+              className={`node-card-animate group collection-card ${colors.card} p-5 rounded-[2.2rem] flex items-center justify-between backdrop-blur-md transition-all duration-500`}
             >
               <div className="flex items-center gap-4">
-                {/* group-hover:scale-110 added for rank badge */}
                 <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-xs transition-all duration-500 group-hover:scale-110 ${
                   index === 0 
                     ? 'bg-[rgb(var(--theme-primary))] text-zinc-950 shadow-lg shadow-[var(--theme-primary-glow)]' 
@@ -60,7 +57,7 @@ export default function LeaderboardTab({ leaderboard, username, colors, spots = 
                   {index + 1}
                 </div>
                 <div>
-                  <p className={`font-bold text-sm transition-colors ${isCurrentUser ? 'text-[rgb(var(--theme-primary))]' : ''}`}>
+                  <p className={`font-bold text-sm transition-colors ${isCurrentUser ? 'text-[rgb(var(--theme-primary))]' : 'text-white'}`}>
                     @{entry.username} {isCurrentUser && '(YOU)'}
                   </p>
                   <p className="text-[9px] text-[rgb(var(--theme-primary))] font-bold uppercase tracking-widest opacity-80">
@@ -76,7 +73,7 @@ export default function LeaderboardTab({ leaderboard, username, colors, spots = 
                   </div>
                 )}
                 <div className="text-right min-w-[60px]">
-                  <p className={`text-sm font-black tracking-tighter ${isCurrentUser ? 'text-[rgb(var(--theme-primary))]' : ''}`}>
+                  <p className={`text-sm font-black tracking-tighter ${isCurrentUser ? 'text-[rgb(var(--theme-primary))]' : 'text-white'}`}>
                     {entry.score.toLocaleString()}
                   </p>
                   <p className="text-[8px] font-bold opacity-30 uppercase tracking-tighter">Total XP</p>
@@ -89,10 +86,9 @@ export default function LeaderboardTab({ leaderboard, username, colors, spots = 
         sortedNodes.map((node, index) => {
           const netScore = (node.upvotes || 0) - (node.downvotes || 0);
           return (
-            /* Added node-card-animate to node entries too */
             <div 
               key={node.id} 
-              className={`node-card-animate group collection-card ${colors.card} p-5 rounded-[2.2rem] flex items-center justify-between border border-white/5 backdrop-blur-md transition-all`}
+              className={`node-card-animate group collection-card ${colors.card} p-5 rounded-[2.2rem] flex items-center justify-between backdrop-blur-md transition-all`}
             >
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center font-black text-xs text-zinc-400 group-hover:text-[rgb(var(--theme-primary))] transition-colors">
