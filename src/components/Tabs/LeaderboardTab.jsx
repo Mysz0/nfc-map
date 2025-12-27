@@ -43,14 +43,16 @@ export default function LeaderboardTab({ leaderboard, username, colors, spots = 
         leaderboard.map((entry, index) => {
           const isCurrentUser = entry.username === username;
           return (
+            /* Added group and node-card-animate */
             <div 
               key={index} 
-              className={`collection-card ${colors.card} p-5 rounded-[2.2rem] flex items-center justify-between border backdrop-blur-md transition-all duration-500 ${
+              className={`node-card-animate group collection-card ${colors.card} p-5 rounded-[2.2rem] flex items-center justify-between border backdrop-blur-md transition-all duration-500 ${
                 isCurrentUser ? 'border-[rgb(var(--theme-primary))]/30' : 'border-white/5'
               }`}
             >
               <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-xs transition-colors duration-500 ${
+                {/* group-hover:scale-110 added for rank badge */}
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-xs transition-all duration-500 group-hover:scale-110 ${
                   index === 0 
                     ? 'bg-[rgb(var(--theme-primary))] text-zinc-950 shadow-lg shadow-[var(--theme-primary-glow)]' 
                     : 'bg-[rgb(var(--theme-primary))]/10 text-[rgb(var(--theme-primary))]'
@@ -68,7 +70,7 @@ export default function LeaderboardTab({ leaderboard, username, colors, spots = 
               </div>
               <div className="flex items-center gap-4">
                 {entry.streak > 0 && (
-                  <div className="flex flex-col items-center opacity-80">
+                  <div className="flex flex-col items-center opacity-80 group-hover:scale-110 transition-transform">
                      <Flame size={12} className="text-orange-500 fill-orange-500/20" />
                      <span className="text-[9px] font-black text-orange-500 tracking-tighter">{entry.streak}D</span>
                   </div>
@@ -87,12 +89,13 @@ export default function LeaderboardTab({ leaderboard, username, colors, spots = 
         sortedNodes.map((node, index) => {
           const netScore = (node.upvotes || 0) - (node.downvotes || 0);
           return (
+            /* Added node-card-animate to node entries too */
             <div 
               key={node.id} 
-              className={`collection-card ${colors.card} p-5 rounded-[2.2rem] flex items-center justify-between border border-white/5 backdrop-blur-md`}
+              className={`node-card-animate group collection-card ${colors.card} p-5 rounded-[2.2rem] flex items-center justify-between border border-white/5 backdrop-blur-md transition-all`}
             >
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center font-black text-xs text-zinc-400">
+                <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center font-black text-xs text-zinc-400 group-hover:text-[rgb(var(--theme-primary))] transition-colors">
                   #{index + 1}
                 </div>
                 <div>

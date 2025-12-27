@@ -33,13 +33,11 @@ export default function HomeTab({
   // --- FIXED LOGIC FOR INSTANT UPDATES ---
   const personalSpotData = activeSpotId ? spotStreaks?.[activeSpotId] : null;
   
-  // Check if DB says it's claimed OR if it just entered our unlockedSpots array this session
   const isLoggedToday = useMemo(() => {
     const dbLogged = personalSpotData?.last_claim && new Date(personalSpotData.last_claim).toDateString() === todayStr;
     const locallyLogged = unlockedSpots.includes(activeSpotId);
     return dbLogged || locallyLogged;
   }, [personalSpotData, unlockedSpots, activeSpotId, todayStr]);
-  // ---------------------------------------
 
   const sortOptions = [
     { id: 'ready', label: 'Ready to Sync', icon: Zap },
@@ -60,11 +58,8 @@ export default function HomeTab({
     return unlockedSpots
       .map(id => {
         const sInfo = spotStreaks[id];
-        // Logic fix: A node is "Ready" only if it wasn't claimed today in DB AND isn't in our current active claim list
         const dbReady = sInfo?.last_claim ? new Date(sInfo.last_claim).toDateString() !== todayStr : true;
-        const isReady = dbReady; 
-
-        return { id, ...spots[id], streakCount: sInfo?.streak || 0, isReady };
+        return { id, ...spots[id], streakCount: sInfo?.streak || 0, isReady: dbReady };
       })
       .filter(node => node.name?.toLowerCase().includes(searchQuery.toLowerCase()))
       .sort((a, b) => {
@@ -211,19 +206,20 @@ export default function HomeTab({
           ) : (
             filteredAndSortedNodes.map(node => {
               const rank = getNodeRank(node.streakCount);
-              // Check ready status against both DB and current session
-              const isReadyLocal = node.isReady && !unlockedSpots.includes(node.id);
+              const isReadyLocal = node.isReady;
               
               return (
-                <div key={node.id} className="relative group transition-all">
+                <div key={node.id} className="relative group">
                   {isReadyLocal && (
                     <div className="absolute -left-1 top-4 bottom-4 w-1 bg-[rgb(var(--theme-primary))] rounded-full z-10 shadow-[0_0_10px_var(--theme-primary-glow)]" />
                   )}
-                  <div className={`smart-glass border p-5 rounded-[2.2rem] flex items-center justify-between transition-all ${
+                  {/* Applied node-card-animate class here */}
+                  <div className={`node-card-animate smart-glass border p-5 rounded-[2.2rem] flex items-center justify-between transition-all ${
                     isDark ? 'bg-zinc-900/60 border-white/10' : 'bg-white border-zinc-100 shadow-sm'
                   }`}>
                     <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${rank.bg} ${rank.color}`}>
+                      {/* Added group-hover:scale-110 for extra polish */}
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${rank.bg} ${rank.color}`}>
                         {node.streakCount >= 10 ? <Trophy size={18} /> : node.streakCount > 1 ? <Flame size={18} fill="currentColor" /> : <CheckCircle2 size={18} />}
                       </div>
                       <div>

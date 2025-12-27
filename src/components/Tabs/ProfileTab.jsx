@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Leaf, Snowflake } from 'lucide-react';
+import { Calendar, Leaf, Snowflake, Waves, Flower } from 'lucide-react';
 
 export default function ProfileTab({ 
   tempUsername = "", 
@@ -11,7 +11,6 @@ export default function ProfileTab({
   isDark = false,
   lastChange = null,
   user = null,
-  // Added default values here to prevent crashes if props are missing
   appStyle = 'emerald',
   setAppStyle = () => {}
 }) {
@@ -72,10 +71,10 @@ export default function ProfileTab({
           <p className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-emerald-800/50'}`}>Select your HUD aesthetic</p>
         </div>
 
-        <div className="flex gap-2 p-1.5 smart-glass border rounded-2xl">
+        <div className="grid grid-cols-2 gap-2 p-1.5 smart-glass border rounded-2xl">
           <button 
             onClick={() => setAppStyle('emerald')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
+            className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
               appStyle === 'emerald' 
               ? 'bg-emerald-500 text-white shadow-lg' 
               : 'text-zinc-500 hover:text-emerald-500'
@@ -87,7 +86,7 @@ export default function ProfileTab({
 
           <button 
             onClick={() => setAppStyle('winter')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
+            className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
               appStyle === 'winter' 
               ? 'bg-blue-400 text-white shadow-lg' 
               : 'text-zinc-500 hover:text-blue-400'
@@ -95,6 +94,30 @@ export default function ProfileTab({
           >
             <Snowflake size={14} />
             <span className="text-[10px] font-bold uppercase">Winter</span>
+          </button>
+
+          <button 
+            onClick={() => setAppStyle('koi')}
+            className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
+              appStyle === 'koi' 
+              ? 'bg-[#EA4426] text-white shadow-lg' 
+              : 'text-zinc-500 hover:text-[#EA4426]'
+            }`}
+          >
+            <Waves size={14} />
+            <span className="text-[10px] font-bold uppercase">Koi</span>
+          </button>
+
+          <button 
+            onClick={() => setAppStyle('sakura')}
+            className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
+              appStyle === 'sakura' 
+              ? 'bg-[#F4ACB7] text-white shadow-lg' 
+              : 'text-zinc-500 hover:text-[#F4ACB7]'
+            }`}
+          >
+            <Flower size={14} />
+            <span className="text-[10px] font-bold uppercase">Sakura</span>
           </button>
         </div>
       </div>
