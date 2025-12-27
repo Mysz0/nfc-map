@@ -1,7 +1,7 @@
 {
   "short_name": "SpotHunt",
   "name": "SpotHunt - Discover the World",
-  "description": "Discover locations by scanning NFC tags",
+  "description": "Discover, Sync, and Dominate. A real-world location game where every spot found is a step toward the top of the leaderboard.",
   "icons": [
     {
       "src": "/icon-512.png",
