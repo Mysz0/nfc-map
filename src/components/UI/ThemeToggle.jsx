@@ -4,10 +4,12 @@ import { Sun, Moon } from 'lucide-react';
 export default function ThemeToggle({ themeMag, setTheme, isDark, isAtTop }) {
   const isMagneticActive = themeMag.position.x !== 0 || themeMag.position.y !== 0;
 
-  // Calculate the travel coordinates based on isAtTop
-  // Mobile values: Absolute (4.05rem, 6.85rem) vs Fixed (1.5rem, 1.5rem)
-  const baseTop = isAtTop ? '4.05rem' : '1.5rem';
-  const baseRight = isAtTop ? '6.85rem' : '1.5rem';
+  // --- POSITIONING LOGIC ---
+  // When at top, we need to offset it from its fixed '1.5rem' base 
+  // to reach the absolute '4.05rem / 6.85rem' position.
+  // Calculation: Target (4.05) - Base (1.5) = 2.55rem offset
+  const offsetY = isAtTop ? '2.55rem' : '0rem';
+  const offsetX = isAtTop ? '-5.35rem' : '0rem'; // Negative moves it left
 
   return (
     <button 
@@ -20,25 +22,19 @@ export default function ThemeToggle({ themeMag, setTheme, isDark, isAtTop }) {
         isDark 
           ? 'bg-zinc-900/80 border-white/10 text-[rgb(var(--theme-primary))]' 
           : 'bg-white/80 border-[rgb(var(--theme-primary))]/20 text-[rgb(var(--theme-primary))] shadow-lg shadow-[var(--theme-primary-glow)]'
-      } ${isAtTop ? 'absolute' : 'fixed'}`}
+      } fixed`} // We keep it FIXED always to prevent layout jumping
       
       style={{ 
-        // We keep top/right here so it knows its base, 
-        // but we ensure the transition is smooth.
-        top: baseTop, 
-        right: baseRight,
+        top: '1.5rem', 
+        right: '1.5rem',
         
-        // Combining the magnetic movement
-        transform: `translate(${themeMag.position.x}px, ${themeMag.position.y}px)`,
+        // Combine Position Offset + Magnetic Movement
+        // This keeps the "sliding" travel while scrolling but removes the "hop" on click
+        transform: `translate(calc(${offsetX} + ${themeMag.position.x}px), calc(${offsetY} + ${themeMag.position.y}px))`,
         
-        // We use a slightly faster duration for mobile layout shifts 
-        // but keep the long duration for that 'traveling' feel.
         transition: isMagneticActive 
-          ? 'none' 
-          : 'all 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
-        
-        // Force the browser to treat background and layout shifts separately
-        transitionProperty: isMagneticActive ? 'none' : 'top, right, background-color, border-color, color, box-shadow, transform'
+          ? 'background-color 0.5s, border-color 0.5s, color 0.5s, box-shadow 0.5s' 
+          : 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
       }}
     >
       {isDark ? <Sun size={18}/> : <Moon size={18}/>}
