@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, useMapEvents } from 'react-leaflet';
 import { Target, Lock, CheckCircle2, ChevronUp, ChevronDown, Zap } from 'lucide-react';
 import L from 'leaflet';
@@ -11,11 +11,27 @@ function ZoomHandler({ setZoom }) {
   return null;
 }
 
-function MapRecenter({ location }) {
+function MapRecenter({ location, isFollowing }) {
   const map = useMap();
+  const lastPos = useRef(null);
+  
   useEffect(() => {
-    if (location) map.setView([location.lat, location.lng], 16);
-  }, [location, map]);
+    if (!location || !isFollowing) return;
+    
+    // Only recenter if position changed significantly (more than ~1 meter)
+    const hasMovedSignificantly = !lastPos.current || 
+      Math.abs(lastPos.current.lat - location.lat) > 0.00001 ||
+      Math.abs(lastPos.current.lng - location.lng) > 0.00001;
+    
+    if (hasMovedSignificantly) {
+      map.setView([location.lat, location.lng], map.getZoom(), {
+        animate: true,
+        duration: 0.5
+      });
+      lastPos.current = location;
+    }
+  }, [location, map, isFollowing]);
+  
   return null;
 }
 
@@ -28,7 +44,7 @@ function MapInvalidator() {
   return null;
 }
 
-function MapInterface({ stableUserLoc, claimRadius, customRadius, radiusBonus }) {
+function MapInterface({ stableUserLoc, claimRadius, customRadius, radiusBonus, onRecenter }) {
   const map = useMap();
   const finalScan = (customRadius || 250) + (radiusBonus || 0);
   const finalClaim = (claimRadius || 20) + (radiusBonus || 0);
@@ -40,7 +56,12 @@ function MapInterface({ stableUserLoc, claimRadius, customRadius, radiusBonus })
           <button
             onClick={(e) => {
               e.preventDefault();
-              if (stableUserLoc) map.flyTo([stableUserLoc.lat, stableUserLoc.lng], 16);
+              if (stableUserLoc) {
+                map.flyTo([stableUserLoc.lat, stableUserLoc.lng], 16, {
+                  duration: 1
+                });
+                onRecenter();
+              }
             }}
             className="smart-glass w-12 h-12 flex items-center justify-center rounded-2xl active:scale-90 transition-all shadow-2xl"
           >
@@ -78,11 +99,21 @@ export default function ExploreTab({
   isDark, 
   claimRadius, 
   customRadius,
-  radiusBonus = 0, // NEW PROP from useGeoLocation
+  radiusBonus = 0,
   onVote 
 }) {
   const [mapRef, setMapRef] = useState(null);
   const [zoom, setZoom] = useState(16);
+  const [isFollowing, setIsFollowing] = useState(true);
+
+  // Detect manual map movement to disable auto-follow
+  const MapDragHandler = () => {
+    const map = useMapEvents({
+      dragstart: () => setIsFollowing(false),
+      zoomstart: () => setIsFollowing(false),
+    });
+    return null;
+  };
 
   const stableUserLoc = useMemo(() => {
     if (!userLocation?.lat) return null;
@@ -92,7 +123,7 @@ export default function ExploreTab({
   const fallbackCenter = [50.0121, 22.6742];
 
   const animatedUserIcon = useMemo(() => {
-    const size = 60; // Fixed size for the center point icon
+    const size = 60;
     return L.divIcon({
       className: 'soft-radar-icon',
       html: `
@@ -125,26 +156,46 @@ export default function ExploreTab({
       >
         <ZoomHandler setZoom={setZoom} />
         <MapInvalidator />
-        <MapRecenter location={stableUserLoc} />
+        <MapRecenter location={stableUserLoc} isFollowing={isFollowing} />
+        <MapDragHandler />
         
         <TileLayer
           key={isDark ? 'dark' : 'light'}
           url={isDark 
             ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" 
             : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"}
+          updateWhenIdle={false}
+          updateWhenZooming={false}
+          keepBuffer={2}
         />
 
         <MapInterface 
           stableUserLoc={stableUserLoc} 
           claimRadius={claimRadius} 
           customRadius={customRadius} 
-          radiusBonus={radiusBonus} 
+          radiusBonus={radiusBonus}
+          onRecenter={() => setIsFollowing(true)}
         />
 
         {stableUserLoc && (
           <>
-            {/* Visual Scan Range Circle */}
+            {/* Claim Range Circle (inner, smaller) */}
             <Circle 
+              key={`claim-${stableUserLoc.lat}-${stableUserLoc.lng}-${radiusBonus}`}
+              center={[stableUserLoc.lat, stableUserLoc.lng]}
+              radius={(claimRadius || 20) + radiusBonus}
+              pathOptions={{
+                fillColor: 'rgb(var(--theme-primary))',
+                fillOpacity: 0.15,
+                color: 'rgb(var(--theme-primary))',
+                weight: 2,
+                dashArray: '5, 5'
+              }}
+            />
+            
+            {/* Scan Range Circle (outer, larger) */}
+            <Circle 
+              key={`scan-${stableUserLoc.lat}-${stableUserLoc.lng}-${radiusBonus}`}
               center={[stableUserLoc.lat, stableUserLoc.lng]}
               radius={(customRadius || 250) + radiusBonus}
               pathOptions={{
@@ -155,7 +206,12 @@ export default function ExploreTab({
                 dashArray: '5, 10'
               }}
             />
-            <Marker position={[stableUserLoc.lat, stableUserLoc.lng]} icon={animatedUserIcon} zIndexOffset={1000} />
+            
+            <Marker 
+              position={[stableUserLoc.lat, stableUserLoc.lng]} 
+              icon={animatedUserIcon} 
+              zIndexOffset={1000} 
+            />
           </>
         )}
 
@@ -186,6 +242,17 @@ export default function ExploreTab({
           );
         })}
       </MapContainer>
+
+      {/* Follow Mode Indicator */}
+      {!isFollowing && stableUserLoc && (
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none">
+          <div className="smart-glass px-4 py-2 rounded-full border border-white/10 shadow-lg">
+            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400">
+              Auto-follow disabled
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

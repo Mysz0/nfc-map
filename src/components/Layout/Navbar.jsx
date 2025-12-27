@@ -6,8 +6,8 @@ export default function Navbar({ activeTab, setActiveTab, isAdmin, colors, isShr
     { id: 'home', icon: Home },
     { id: 'explore', icon: Compass },
     { id: 'leaderboard', icon: Trophy },
-    { id: 'store', icon: ShoppingBag }, // New Shop & Inventory Tab
     { id: 'profile', icon: User },
+    { id: 'store', icon: ShoppingBag }, 
     { id: 'dev', icon: Terminal, admin: true },
   ];
 
