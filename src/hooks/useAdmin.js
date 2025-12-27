@@ -1,10 +1,10 @@
 import { useState } from 'react'; 
 import { supabase } from '../supabase';
 
-export function useAdmin(user, userRole, showToast, setSpots, setSpotStreaks, totalPoints, setTotalPoints, getMultiplier, fetchLeaderboard) {
+// Added fetchProfile to the arguments list
+export function useAdmin(user, userRole, showToast, setSpots, setSpotStreaks, totalPoints, setTotalPoints, getMultiplier, fetchLeaderboard, fetchProfile) {
   const isAdmin = userRole === 'admin';
   
-  // 1. Separate options for the two different radius types
   const detectionOptions = [
     { label: '250m', val: 250 },
     { label: '500m', val: 500 },
@@ -20,7 +20,6 @@ export function useAdmin(user, userRole, showToast, setSpots, setSpotStreaks, to
     { label: '500m', val: 500 },
   ];
 
-  // FIX: Added actual database logic to reset the name change cooldown
   const resetTimer = async () => {
     if (!user || !isAdmin) return;
     
@@ -33,6 +32,11 @@ export function useAdmin(user, userRole, showToast, setSpots, setSpotStreaks, to
       if (error) throw error;
       
       showToast("Username Cooldown Reset!", "success");
+      
+      // FIX: Manually trigger a data refresh so ProfileTab updates without a reload
+      if (fetchProfile) {
+        await fetchProfile();
+      }
     } catch (err) {
       console.error("Reset Timer Error:", err);
       showToast("Failed to reset cooldown", "error");
@@ -41,7 +45,7 @@ export function useAdmin(user, userRole, showToast, setSpots, setSpotStreaks, to
 
   const addNewSpot = async (s) => {
     if (!isAdmin) return;
-    // Using the ID passed from AdminTab (random hex) or fallback to slug
+    // Ensure we use the random ID if provided, or fallback
     const id = s.id || s.name.toLowerCase().replace(/\s+/g, '-');
     const { error } = await supabase.from('spots').insert([{ ...s, id }]);
     

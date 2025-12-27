@@ -16,7 +16,7 @@ import ExploreTab from './components/Tabs/ExploreTab';
 import LeaderboardTab from './components/Tabs/LeaderboardTab';
 import ProfileTab from './components/Tabs/ProfileTab';
 import AdminTab from './components/Tabs/AdminTab';
-import StoreTab from './components/Tabs/StoreTab'; // Ensure this is imported
+import StoreTab from './components/Tabs/StoreTab';
 import Login from './components/Auth/Login';
 import Toast from './components/UI/Toast';
 import ThemeToggle from './components/UI/ThemeToggle';
@@ -35,7 +35,7 @@ export default function App() {
     isDark, 
     isAtTop, 
     isNavbarShrunk,
-    appStyle,     
+    appStyle,      
     setAppStyle   
   } = useTheme();
   
@@ -58,14 +58,15 @@ export default function App() {
     buyItem,
     activateItem,
     customRadius,      
-    claimRadius,       
+    claimRadius,        
     updateRadius,      
     updateClaimRadius, 
     detectionOptions,  
-    claimOptions       
+    claimOptions,
+    fetchProfile // Assuming useGameLogic returns your data refresh function
   } = useGameLogic(user, showToast);
 
-  // High-accuracy location + proximity check (Dynamic thresholds from DB)
+  // High-accuracy location + proximity check
   const { userLocation, mapCenter, isNearSpot, canClaim, activeSpotId, radiusBonus } = useGeoLocation(
     user,
     spots, 
@@ -74,11 +75,9 @@ export default function App() {
     claimRadius
   );
 
-  // Magnetic refs
   const themeMag = useMagnetic();
   const logoutMag = useMagnetic();
 
-  // 3. UI HELPERS - ROLE BASED
   const isAdmin = userRole === 'admin'; 
   
   const colors = {
@@ -95,7 +94,6 @@ export default function App() {
     window.location.href = '/';
   };
 
-  // 4. AUTH & LOADING SCREENS
   if (loading) return (
     <div className={`min-h-screen ${colors.bg} flex items-center justify-center`}>
       <div className="w-6 h-6 border-2 border-theme-primary border-t-transparent rounded-full animate-spin" 
@@ -178,11 +176,11 @@ export default function App() {
             lastChange={lastChange}
             user={user}
             appStyle={appStyle}     
-            setAppStyle={setAppStyle} 
+            setAppStyle={setAppStyle}
+            showToast={showToast} // FIX: Now ProfileTab can show the "duplicate name" error
           />
         )}
 
-        {/* FIXED: Prop names now match the destructured logic */}
         {activeTab === 'store' && (
           <StoreTab 
             totalPoints={totalPoints} 
@@ -215,6 +213,7 @@ export default function App() {
             deleteSpotFromDB={deleteSpotFromDB}
             spotStreaks={spotStreaks}
             updateNodeStreak={updateNodeStreak}
+            fetchProfile={fetchProfile} // FIX: Pass refresh function to AdminTab
           />
         )}
       </div>

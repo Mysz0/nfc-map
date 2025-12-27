@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'; 
 import { supabase } from '../supabase';
 import { useProfile } from './useProfile';
 import { useSpots } from './useSpots';
@@ -40,9 +40,9 @@ export function useGameLogic(user, showToast) {
     }
   };
 
+  // Profile hook returns fetchProfile (the function that re-syncs user data)
   const profile = useProfile(user, showToast, fetchLeaderboard);
   
-  // Initialize Spots
   const spots = useSpots(
     user, 
     showToast, 
@@ -51,7 +51,6 @@ export function useGameLogic(user, showToast) {
     fetchLeaderboard
   );
   
-  // Initialize Store (Includes buyItem and activateItem)
   const store = useStore(
     user, 
     profile.totalPoints, 
@@ -59,10 +58,9 @@ export function useGameLogic(user, showToast) {
     showToast
   );
 
-  // --- UPDATED: Initialize Voting with unlockedSpots check ---
   const { handleVote } = useVotes(user, spots.setSpots, spots.unlockedSpots);
 
-  // Initialize Admin
+  // --- UPDATED: Passing profile.fetchProfile to Admin ---
   const admin = useAdmin(
     user, 
     profile.userRole, 
@@ -72,7 +70,8 @@ export function useGameLogic(user, showToast) {
     profile.totalPoints, 
     profile.setTotalPoints, 
     spots.getMultiplier, 
-    fetchLeaderboard
+    fetchLeaderboard,
+    profile.fetchProfile // Added this argument
   );
 
   useEffect(() => {
@@ -84,7 +83,8 @@ export function useGameLogic(user, showToast) {
     ...spots, 
     ...admin, 
     ...store,
-    handleVote, // Return handleVote explicitly if needed, or it might be covered by spread
-    leaderboard
+    handleVote,
+    leaderboard,
+    fetchProfile: profile.fetchProfile // Explicitly return it for App.jsx to use
   };
 }

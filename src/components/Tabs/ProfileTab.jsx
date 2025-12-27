@@ -12,10 +12,21 @@ export default function ProfileTab({
   lastChange = null,
   user = null,
   appStyle = 'emerald',
-  setAppStyle = () => {}
+  setAppStyle = () => {},
+  showToast = () => {} // Added this prop
 }) {
   const provider = user?.app_metadata?.provider || 'account';
   const providerName = provider.charAt(0).toUpperCase() + provider.slice(1);
+
+  // PREVENT REDUNDANT UPDATES
+  const handleSaveIdentity = () => {
+    const currentUsername = user?.username || "";
+    if (tempUsername.trim() === currentUsername.trim()) {
+      showToast("This is already your current identity!", "error");
+      return;
+    }
+    saveUsername();
+  };
 
   const getCooldownInfo = () => {
     // If lastChange is null (reset by admin), cooldown is over
@@ -54,7 +65,7 @@ export default function ProfileTab({
         />
         
         <button 
-          onClick={saveUsername}
+          onClick={handleSaveIdentity} // Using our new handler
           disabled={!!daysLeft}
           className={`w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all ${
             daysLeft 
@@ -124,7 +135,6 @@ export default function ProfileTab({
             <span className="text-[10px] font-bold uppercase">Sakura</span>
           </button>
 
-          {/* NEW ABYSS THEME BUTTON */}
           <button 
             onClick={() => setAppStyle('abyss')}
             className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all col-span-2 ${
