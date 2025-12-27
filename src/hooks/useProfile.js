@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
 
 export function useProfile(user, showToast, fetchLeaderboard) {
@@ -9,74 +9,77 @@ export function useProfile(user, showToast, fetchLeaderboard) {
   const [showEmail, setShowEmail] = useState(false);
   const [lastChange, setLastChange] = useState(null);
   const [customRadius, setCustomRadius] = useState(250);
-  const [claimRadius, setClaimRadius] = useState(20); // New state for Claim Range
+  const [claimRadius, setClaimRadius] = useState(20);
   const [visitData, setVisitData] = useState({ last_visit: null, streak: 0 });
 
-  useEffect(() => {
+  // 1. MOVED OUTSIDE: fetchProfile is now accessible to the return object
+  const fetchProfile = useCallback(async () => {
     if (!user) return;
+    try {
+      let { data: profile } = await supabase
+        .from('profiles')
+        .select('username, role, total_points, show_email, last_username_change, custom_radius, claim_radius, streak_count, last_visit')
+        .eq('id', user.id)
+        .maybeSingle();
 
-    const fetchProfile = async () => {
-      try {
-        // 1. Fetch Profile including the new claim_radius column
-        let { data: profile } = await supabase
-          .from('profiles')
-          .select('username, role, total_points, show_email, last_username_change, custom_radius, claim_radius, streak_count, last_visit')
-          .eq('id', user.id)
-          .maybeSingle();
+      if (profile) {
+        setUsername(profile.username || '');
+        setTempUsername(profile.username || '');
+        setUserRole(profile.role || 'player');
+        setTotalPoints(profile.total_points || 0);
+        setShowEmail(profile.show_email ?? false);
+        setLastChange(profile.last_username_change);
+        setCustomRadius(profile.custom_radius || 250);
+        setClaimRadius(profile.claim_radius || 20);
 
-        if (profile) {
-          setUsername(profile.username || '');
-          setTempUsername(profile.username || '');
-          setUserRole(profile.role || 'player');
-          setTotalPoints(profile.total_points || 0);
-          setShowEmail(profile.show_email ?? false);
-          setLastChange(profile.last_username_change);
-          setCustomRadius(profile.custom_radius || 250);
-          setClaimRadius(profile.claim_radius || 20); // Sync from DB
+        // --- STREAK LOGIC ---
+        const now = new Date();
+        const todayStr = now.toDateString();
+        let dbStreak = profile.streak_count || 0;
+        let lastVisitDate = profile.last_visit ? new Date(profile.last_visit) : null;
+        let newStreak = dbStreak;
 
-          // --- STREAK LOGIC ---
-          const now = new Date();
-          const todayStr = now.toDateString();
-          
-          let dbStreak = profile.streak_count || 0;
-          let lastVisitDate = profile.last_visit ? new Date(profile.last_visit) : null;
-          let newStreak = dbStreak;
-
-          if (!lastVisitDate) {
-            newStreak = 1;
-          } else if (lastVisitDate.toDateString() !== todayStr) {
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            newStreak = (lastVisitDate.toDateString() === yesterday.toDateString()) ? dbStreak + 1 : 1;
-          }
-
-          setVisitData({ last_visit: now.toISOString(), streak: newStreak });
-
-          if (!lastVisitDate || lastVisitDate.toDateString() !== todayStr) {
-            await supabase
-              .from('profiles')
-              .update({ 
-                streak_count: newStreak, 
-                last_visit: now.toISOString() 
-              })
-              .eq('id', user.id);
-
-            showToast(`${newStreak} Day Streak Active!`);
-            if (fetchLeaderboard) fetchLeaderboard();
-          }
+        if (!lastVisitDate) {
+          newStreak = 1;
+        } else if (lastVisitDate.toDateString() !== todayStr) {
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          newStreak = (lastVisitDate.toDateString() === yesterday.toDateString()) ? dbStreak + 1 : 1;
         }
-      } catch (err) {
-        console.error("Profile Fetch Error:", err);
-      }
-    };
 
+        setVisitData({ last_visit: now.toISOString(), streak: newStreak });
+
+        if (!lastVisitDate || lastVisitDate.toDateString() !== todayStr) {
+          await supabase
+            .from('profiles')
+            .update({ 
+              streak_count: newStreak, 
+              last_visit: now.toISOString() 
+            })
+            .eq('id', user.id);
+
+          showToast(`${newStreak} Day Streak Active!`);
+          if (fetchLeaderboard) fetchLeaderboard();
+        }
+      }
+    } catch (err) {
+      console.error("Profile Fetch Error:", err);
+    }
+  }, [user, fetchLeaderboard, showToast]);
+
+  // Initial load
+  useEffect(() => {
     fetchProfile();
-  }, [user]);
+  }, [fetchProfile]);
 
   const saveUsername = async () => {
     const cleaned = tempUsername.trim();
     if (cleaned.length < 3) return showToast("Identity too short", "error");
-    if (cleaned === username) return;
+    
+    // FIX: Added error toast for same-name attempt
+    if (cleaned === username) {
+      return showToast("This is already your current identity!", "error");
+    }
 
     const { data: reserved } = await supabase
       .from('profiles')
@@ -101,24 +104,16 @@ export function useProfile(user, showToast, fetchLeaderboard) {
     }
   };
 
-  // Logic for Detection Radius (Visuals)
   const updateRadius = async (v) => {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ custom_radius: v })
-      .eq('id', user.id);
+    const { error } = await supabase.from('profiles').update({ custom_radius: v }).eq('id', user.id);
     if (!error) {
       setCustomRadius(v);
       showToast(`Detect: ${v}m`);
     }
   };
 
-  // Logic for Claim Radius (Action)
   const updateClaimRadius = async (v) => {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ claim_radius: v })
-      .eq('id', user.id);
+    const { error } = await supabase.from('profiles').update({ claim_radius: v }).eq('id', user.id);
     if (!error) {
       setClaimRadius(v);
       showToast(`Claim: ${v}m`);
@@ -127,10 +122,7 @@ export function useProfile(user, showToast, fetchLeaderboard) {
 
   const toggleEmailVisibility = async () => {
     const newVal = !showEmail;
-    const { error } = await supabase
-      .from('profiles')
-      .update({ show_email: newVal })
-      .eq('id', user.id);
+    const { error } = await supabase.from('profiles').update({ show_email: newVal }).eq('id', user.id);
     if (!error) {
       setShowEmail(newVal);
       showToast(newVal ? "Email Visible" : "Email Hidden");
@@ -140,6 +132,7 @@ export function useProfile(user, showToast, fetchLeaderboard) {
   const resetTimer = async () => {
     if (!user) return;
     await supabase.from('profiles').update({ last_username_change: null }).eq('id', user.id);
+    // Explicitly update local state so ProfileTab reacts instantly
     setLastChange(null);
     showToast("Cooldown Bypassed");
   };
@@ -148,6 +141,7 @@ export function useProfile(user, showToast, fetchLeaderboard) {
     username, tempUsername, setTempUsername,
     userRole, totalPoints, setTotalPoints,
     showEmail, lastChange, customRadius, claimRadius, visitData,
-    saveUsername, updateRadius, updateClaimRadius, toggleEmailVisibility, resetTimer
+    saveUsername, updateRadius, updateClaimRadius, toggleEmailVisibility, resetTimer,
+    fetchProfile // Now properly returned!
   };
 }
