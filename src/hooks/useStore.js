@@ -28,7 +28,7 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
     const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     const s = Math.floor((diff % (1000 * 60)) / 1000);
 
-    return { timeLeft: `${h}h ${m}m ${s}s`, progress };
+    return { timeLeft: `${h}h ${m}s`, progress }; // Simplified format for clarity
   };
 
   const deleteExpiredItem = async (inventoryId) => {
@@ -107,11 +107,19 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
   };
 
   const activateItem = async (inventoryId) => {
-    // 1. Double lock check
     if (!user || loading || isActivating.current) return;
     
     const itemToActivate = inventory.find(inv => inv.id === inventoryId);
     if (!itemToActivate || itemToActivate.is_active) return;
+
+    // --- OPTIMISTIC UI UPDATE ---
+    // Instantly remove/decrement from local state so the user can't click it again
+    setInventory(prev => prev.map(inv => {
+      if (inv.id === inventoryId) {
+        return { ...inv, quantity: inv.quantity - 1 };
+      }
+      return inv;
+    }).filter(inv => inv.quantity > 0 || inv.is_active));
 
     isActivating.current = true;
     setLoading(true);
@@ -123,7 +131,7 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
 
       const boostDurationMs = itemToActivate.shop_items.duration_hours * 60 * 60 * 1000;
 
-      // --- STEP 1: CONSUME THE ITEM FIRST ---
+      // 1. DATABASE CONSUMPTION
       if (itemToActivate.quantity > 1) {
         await supabase.from('user_inventory')
           .update({ quantity: itemToActivate.quantity - 1 })
@@ -132,9 +140,8 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
         await supabase.from('user_inventory').delete().eq('id', inventoryId);
       }
 
-      // --- STEP 2: APPLY THE BOOST ---
+      // 2. DATABASE BOOST APPLICATION
       if (activeRow) {
-        // Extend existing
         const currentActivation = new Date(activeRow.activated_at).getTime();
         const newActivationDate = new Date(currentActivation + boostDurationMs);
 
@@ -145,7 +152,6 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
 
         showToast(`${itemToActivate.shop_items.name} Extended!`, "success");
       } else {
-        // Create new active row
         await supabase.from('user_inventory').insert({
           user_id: user.id,
           item_id: itemToActivate.item_id,
@@ -156,10 +162,12 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
         showToast(`${itemToActivate.shop_items.name} Activated!`, "success");
       }
 
+      // Sync local state with database truth
       await fetchData(); 
     } catch (err) {
       console.error(err);
       showToast("Activation failed", "error");
+      await fetchData(); // Refresh to restore items if DB failed
     } finally {
       isActivating.current = false;
       setLoading(false);
