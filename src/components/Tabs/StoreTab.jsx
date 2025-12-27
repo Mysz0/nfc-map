@@ -102,8 +102,8 @@ export default function StoreTab({ totalPoints, colors, shopItems = [], inventor
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center z-10 relative ${inv.is_active ? 'bg-[rgb(var(--theme-primary))]/20 shadow-[0_0_15px_rgba(var(--theme-primary),0.3)]' : 'bg-white/5'}`}>
                   {inv.is_active ? <CheckCircle2 size={20} className="text-[rgb(var(--theme-primary))]" /> : (iconMap[inv.shop_items?.icon_name] || <Package size={20} />)}
                   
-                  {/* Quantity Badge */}
-                  {!inv.is_active && inv.quantity > 1 && (
+                  {/* Quantity Badge - show if quantity > 0 */}
+                  {inv.quantity > 0 && (
                     <div className="absolute -top-1 -right-1 bg-white text-zinc-950 text-[8px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-zinc-900 shadow-lg">
                       x{inv.quantity}
                     </div>
@@ -125,12 +125,13 @@ export default function StoreTab({ totalPoints, colors, shopItems = [], inventor
                   </div>
                 </div>
 
-                {!inv.is_active && (
+                {/* Show activate button if there's quantity available */}
+                {inv.quantity > 0 && (
                   <button 
                     onClick={() => onActivate(inv.id)}
                     className="z-10 text-[9px] font-black bg-[rgb(var(--theme-primary))]/10 text-[rgb(var(--theme-primary))] px-4 py-2 rounded-xl hover:bg-[rgb(var(--theme-primary))]/20 transition-colors border border-[rgb(var(--theme-primary))]/20 active:scale-95 uppercase tracking-widest"
                   >
-                    Activate
+                    {inv.is_active ? 'Extend' : 'Activate'}
                   </button>
                 )}
 
