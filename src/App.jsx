@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import 'leaflet/dist/leaflet.css';
 
 // MODULAR IMPORTS
@@ -29,16 +29,23 @@ export default function App() {
   // 2. LOGIC EXTRACTION (Hooks)
   const { user, loading } = useAuth();
   
-  const { 
-    theme, 
-    setTheme, 
-    isDark, 
-    isAtTop, 
-    isNavbarShrunk,
-    appStyle,      
-    setAppStyle   
+  const {
+    mode,
+    setMode,
+    appStyle,
+    setAppStyle,
+    isDark,
+    isAtTop,
+    isNavbarShrunk
   } = useTheme();
-  
+
+  // --- NEW THEME ENGINE SYNC ---
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.setAttribute('data-theme', appStyle);
+    isDark ? root.classList.add('dark') : root.classList.remove('dark');
+  }, [appStyle, isDark]);
+
   const showToast = (text, type = 'success') => {
     setStatusMsg({ text, type });
     setTimeout(() => setStatusMsg({ text: '', type: '' }), 4000);
@@ -60,13 +67,12 @@ export default function App() {
     customRadius,      
     claimRadius,        
     updateRadius,      
-    updateClaimRadius, 
+    updateClaimRadius,  
     detectionOptions,  
     claimOptions,
-    fetchProfile // Assuming useGameLogic returns your data refresh function
+    fetchProfile 
   } = useGameLogic(user, showToast);
 
-  // High-accuracy location + proximity check
   const { userLocation, mapCenter, isNearSpot, canClaim, activeSpotId, radiusBonus } = useGeoLocation(
     user,
     spots, 
@@ -79,14 +85,6 @@ export default function App() {
   const logoutMag = useMagnetic();
 
   const isAdmin = userRole === 'admin'; 
-  
-  const colors = {
-    bg: isDark ? 'bg-[var(--theme-map-bg-dark)]' : 'bg-[var(--theme-map-bg-light)]',
-    card: 'smart-glass border-white/[0.03] shadow-2xl',
-    nav: 'smart-glass border-white/[0.05]',
-    text: isDark ? 'text-zinc-100' : 'text-[var(--theme-text-light)]',
-    glass: 'smart-glass'
-  };
 
   const handleLogout = async () => {
     const { supabase } = await import('./supabase');
@@ -94,25 +92,25 @@ export default function App() {
     window.location.href = '/';
   };
 
+  // UPDATED: Loading screen now uses theme variables for background and spinner
   if (loading) return (
-    <div className={`min-h-screen ${colors.bg} flex items-center justify-center`}>
-      <div className="w-6 h-6 border-2 border-theme-primary border-t-transparent rounded-full animate-spin" 
-           style={{ borderColor: 'rgb(var(--theme-primary))', borderTopColor: 'transparent' }} />
+    <div className="min-h-screen flex items-center justify-center bg-[var(--theme-map-bg)]">
+      <div className="w-8 h-8 border-4 border-[rgb(var(--theme-primary))] border-t-transparent rounded-full animate-spin shadow-[var(--theme-primary-glow)]" />
     </div>
   );
 
   if (!user) return (
-    <Login theme={theme} setTheme={setTheme} isDark={isDark} colors={colors} />
+    <Login theme={theme} setTheme={setTheme} isDark={isDark} />
   );
 
   return (
-    <div className={`min-h-screen relative ${colors.bg} ${colors.text} pb-36 transition-all duration-700 ease-in-out`}>
+    <div className="min-h-screen relative pb-36 transition-all duration-700 ease-in-out bg-[var(--theme-map-bg)] text-[var(--theme-text-title)]">
       
       <Toast statusMsg={statusMsg} />
 
       <ThemeToggle 
         themeMag={themeMag} 
-        setTheme={setTheme} 
+        setTheme={setMode} 
         isDark={isDark} 
         isAtTop={isAtTop} 
       />
@@ -127,7 +125,7 @@ export default function App() {
         handleLogout={handleLogout} 
       />
 
-      <div className="max-w-md mx-auto px-6 -mt-16 relative z-30">
+      <main className="max-w-md mx-auto px-6 -mt-16 relative z-30">
         {activeTab === 'home' && (
           <HomeTab 
             isNearSpot={isNearSpot} 
@@ -139,14 +137,14 @@ export default function App() {
             foundCount={unlockedSpots.length} 
             unlockedSpots={unlockedSpots} 
             spots={spots} 
-            colors={colors} 
             streak={visitData?.streak || 0}
             spotStreaks={spotStreaks} 
+            isDark={isDark}
           />
         )}
         
         {activeTab === 'leaderboard' && (
-          <LeaderboardTab leaderboard={leaderboard} username={username} colors={colors} spots={spots} />
+          <LeaderboardTab leaderboard={leaderboard} username={username} spots={spots} isDark={isDark} />
         )}
         
         {activeTab === 'explore' && (
@@ -158,7 +156,6 @@ export default function App() {
             unlockedSpots={unlockedSpots}
             claimRadius={claimRadius}
             customRadius={customRadius}
-            colors={colors} 
             onVote={handleVote}
             radiusBonus={radiusBonus}
           />
@@ -171,7 +168,6 @@ export default function App() {
             saveUsername={saveUsername} 
             showEmail={showEmail} 
             toggleEmailVisibility={toggleEmailVisibility} 
-            colors={colors} 
             isDark={isDark} 
             lastChange={lastChange}
             user={user}
@@ -185,7 +181,6 @@ export default function App() {
         {activeTab === 'store' && (
           <StoreTab 
             totalPoints={totalPoints} 
-            colors={colors} 
             isDark={isDark} 
             shopItems={shopItems} 
             inventory={inventory} 
@@ -201,7 +196,6 @@ export default function App() {
             claimSpot={claimSpot} 
             removeSpot={removeSpot} 
             isDark={isDark} 
-            colors={colors} 
             userLocation={userLocation} 
             currentRadius={customRadius} 
             updateRadius={updateRadius} 
@@ -214,10 +208,10 @@ export default function App() {
             deleteSpotFromDB={deleteSpotFromDB}
             spotStreaks={spotStreaks}
             updateNodeStreak={updateNodeStreak}
-            fetchProfile={fetchProfile} // FIX: Pass refresh function to AdminTab
+            fetchProfile={fetchProfile} 
           />
         )}
-      </div>
+      </main>
 
       <div className={`
         fixed bottom-8 left-0 right-0 z-[5000] px-8
@@ -230,7 +224,6 @@ export default function App() {
           activeTab={activeTab} 
           setActiveTab={setActiveTab} 
           isAdmin={isAdmin} 
-          colors={colors}
           isShrunk={isNavbarShrunk} 
         />
       </div>

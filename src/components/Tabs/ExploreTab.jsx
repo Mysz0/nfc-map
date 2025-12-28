@@ -37,7 +37,6 @@ function MapInvalidator() {
 function MapInterface({ stableUserLoc, claimRadius, customRadius, radiusBonus, onRecenter }) {
   const map = useMap();
   
-  // Calculate final values inside the render to ensure they are dynamic
   const finalScan = (customRadius || 250) + (radiusBonus || 0);
   const finalClaim = (claimRadius || 20) + (radiusBonus || 0);
 
@@ -53,7 +52,7 @@ function MapInterface({ stableUserLoc, claimRadius, customRadius, radiusBonus, o
                 onRecenter();
               }
             }}
-            className="smart-glass w-12 h-12 flex items-center justify-center rounded-2xl active:scale-90 transition-all shadow-2xl"
+            className="smart-glass w-12 h-12 flex items-center justify-center rounded-2xl active:scale-90 transition-all shadow-2xl border"
           >
             <Target size={22} className="text-[rgb(var(--theme-primary))]" />
           </button>
@@ -68,7 +67,6 @@ function MapInterface({ stableUserLoc, claimRadius, customRadius, radiusBonus, o
             </div>
             <div className="text-[rgb(var(--theme-primary))] font-black text-[10px] uppercase tracking-tighter flex items-center gap-5">
               <span className="opacity-60 flex items-center gap-1">
-                {/* Dynamically show Zap icon and updated claim range */}
                 {radiusBonus > 0 && <Zap size={10} className="animate-pulse" />} CLAIM: {finalClaim}M
               </span>
               <div className="flex items-center gap-2">
@@ -134,9 +132,7 @@ export default function ExploreTab({
   });
 
   return (
-    <div className={`relative w-full h-[70vh] rounded-[3rem] overflow-hidden border transition-all duration-700 ${
-      isDark ? 'border-white/5 bg-zinc-950' : 'border-[rgb(var(--theme-primary))]/10 bg-emerald-50'
-    }`}>
+    <div className="relative w-full h-[70vh] rounded-[3rem] overflow-hidden border transition-all duration-700 bg-[var(--theme-map-bg)]">
       <MapContainer 
         center={stableUserLoc ? [stableUserLoc.lat, stableUserLoc.lng] : fallbackCenter} 
         zoom={stableUserLoc ? 16 : 2} 
@@ -164,7 +160,6 @@ export default function ExploreTab({
         />
 
         {stableUserLoc && (
-          /* Using radiusBonus in the key forces Leaflet to re-draw the circles when the boost changes */
           <React.Fragment key={`user-loc-${stableUserLoc.lat}-${stableUserLoc.lng}-${radiusBonus}`}>
             <Circle 
               center={[stableUserLoc.lat, stableUserLoc.lng]}
@@ -206,18 +201,18 @@ export default function ExploreTab({
           return (
             <Marker key={spot.id} position={[spot.lat, spot.lng]} icon={spotIcon(isUnlocked)}>
               <Popup closeButton={false} offset={[0, -5]}>
-                <div className="smart-glass p-1.5 px-2 rounded-xl border border-white/10 min-w-[140px] shadow-2xl overflow-hidden">
+                <div className="smart-glass p-1.5 px-2 rounded-xl border min-w-[140px] shadow-2xl overflow-hidden">
                   <div className="flex items-center justify-between mb-0.5">
-                    <p className={`text-[7px] font-black uppercase tracking-[0.2em] ${isUnlocked ? 'text-[rgb(var(--theme-primary))]' : 'text-zinc-500'}`}>
+                    <p className={`text-[7px] font-black uppercase tracking-[0.2em] ${isUnlocked ? 'text-[rgb(var(--theme-primary))]' : 'opacity-40'}`}>
                       {isUnlocked ? 'UNLOCKED' : 'LOCKED'}
                     </p>
-                    {isUnlocked ? <CheckCircle2 size={8} className="text-[rgb(var(--theme-primary))]" /> : <Lock size={8} className="text-zinc-500" />}
+                    {isUnlocked ? <CheckCircle2 size={8} className="text-[rgb(var(--theme-primary))]" /> : <Lock size={8} className="opacity-40" />}
                   </div>
                   
-                  <p className={`text-[10px] font-bold truncate mb-1.5 ${isDark ? 'text-white' : 'text-zinc-900'}`}>{spot.name}</p>
+                  <p className="text-[10px] font-bold truncate mb-1.5">{spot.name}</p>
 
-                  <div className={`flex items-center justify-between pt-1.5 border-t ${isDark ? 'border-white/5' : 'border-zinc-200'}`}>
-                    <div className="flex items-center gap-1">
+                  <div className="flex items-center justify-between pt-1.5 border-t border-current opacity-10">
+                    <div className="flex items-center gap-1 opacity-100">
                       <button 
                         disabled={!isUnlocked}
                         onClick={() => isUnlocked && onVote(spot.id, 'upvotes')}
@@ -247,7 +242,7 @@ export default function ExploreTab({
                     </div>
                     
                     <div className="text-right leading-none">
-                      <p className={`text-[11px] font-black tracking-tighter ${isUnlocked ? (isDark ? 'text-white' : 'text-zinc-900') : 'opacity-20'}`}>
+                      <p className={`text-[11px] font-black tracking-tighter ${isUnlocked ? 'opacity-100' : 'opacity-20'}`}>
                         {((spot.upvotes || 0) - (spot.downvotes || 0)).toLocaleString()}
                       </p>
                       <p className="text-[5px] uppercase font-black opacity-30">Rating</p>
@@ -262,8 +257,8 @@ export default function ExploreTab({
 
       {!isFollowing && stableUserLoc && (
         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none">
-          <div className="smart-glass px-4 py-2 rounded-full border border-white/10 shadow-lg">
-            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400">
+          <div className="smart-glass px-4 py-2 rounded-full border shadow-lg">
+            <p className="text-[9px] font-black uppercase tracking-widest opacity-40">
               Auto-follow disabled
             </p>
           </div>

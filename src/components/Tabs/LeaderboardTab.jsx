@@ -13,15 +13,13 @@ export default function LeaderboardTab({ leaderboard, username, spots = {}, isDa
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-6 duration-700 pb-24">
       {/* View Switcher */}
-      <div className={`flex p-1.5 rounded-[2rem] border mx-4 transition-all duration-500 ${
-        isDark ? 'bg-zinc-900/60 border-white/10' : 'bg-black/5 border-black/5'
-      }`}>
+      <div className="flex p-1.5 rounded-[2rem] border mx-4 transition-all duration-500 smart-glass">
         <button
           onClick={() => setView('players')}
           className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[1.6rem] transition-all duration-300 ${
             view === 'players' 
               ? 'bg-[rgb(var(--theme-primary))] text-zinc-950 shadow-lg font-black' 
-              : isDark ? 'text-zinc-500' : 'text-zinc-400'
+              : 'opacity-40 hover:opacity-100'
           }`}
         >
           <Users size={14} />
@@ -32,7 +30,7 @@ export default function LeaderboardTab({ leaderboard, username, spots = {}, isDa
           className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[1.6rem] transition-all duration-300 ${
             view === 'nodes' 
               ? 'bg-[rgb(var(--theme-primary))] text-zinc-950 shadow-lg font-black' 
-              : isDark ? 'text-zinc-500' : 'text-zinc-400'
+              : 'opacity-40 hover:opacity-100'
           }`}
         >
           <MapPin size={14} />
@@ -51,8 +49,8 @@ export default function LeaderboardTab({ leaderboard, username, spots = {}, isDa
             <div 
               key={index} 
               className={`node-card-animate group smart-glass p-5 rounded-[2.2rem] flex items-center justify-between border transition-all duration-500 ${
-                isDark ? 'bg-zinc-900/60 border-white/10' : 'bg-white border-zinc-100 shadow-sm'
-              } ${isCurrentUser ? 'ring-1 ring-[rgb(var(--theme-primary))]/30' : ''} hover:scale-[1.02] active:scale-[0.98]`}
+                isCurrentUser ? 'ring-1 ring-[rgb(var(--theme-primary))]/30' : ''
+              } hover:scale-[1.02] active:scale-[0.98]`}
             >
               <div className="flex items-center gap-4">
                 <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-xs transition-transform duration-500 group-hover:scale-110 ${
@@ -80,7 +78,7 @@ export default function LeaderboardTab({ leaderboard, username, spots = {}, isDa
                   </div>
                 )}
                 <div className="text-right min-w-[60px]">
-                  <p className={`text-sm font-black tracking-tighter transition-colors duration-500 ${isDark ? 'text-zinc-100' : 'text-zinc-700'} ${isCurrentUser ? 'text-[rgb(var(--theme-primary))]' : ''}`}>
+                  <p className={`text-sm font-black tracking-tighter transition-colors duration-500 ${isCurrentUser ? 'text-[rgb(var(--theme-primary))]' : ''}`}>
                     {entry.score.toLocaleString()}
                   </p>
                   <p className="text-[8px] font-bold opacity-30 uppercase tracking-tighter">Total XP</p>
@@ -95,9 +93,7 @@ export default function LeaderboardTab({ leaderboard, username, spots = {}, isDa
           return (
             <div 
               key={node.id} 
-              className={`node-card-animate group smart-glass p-5 rounded-[2.2rem] flex items-center justify-between border transition-all duration-500 ${
-                isDark ? 'bg-zinc-900/60 border-white/10' : 'bg-white border-zinc-100 shadow-sm'
-              } hover:scale-[1.02] active:scale-[0.98]`}
+              className="node-card-animate group smart-glass p-5 rounded-[2.2rem] flex items-center justify-between border transition-all duration-500 hover:scale-[1.02] active:scale-[0.98]"
             >
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-2xl bg-[rgb(var(--theme-primary))]/5 flex items-center justify-center font-black text-xs text-[rgb(var(--theme-primary))]/40 transition-colors duration-500 group-hover:text-[rgb(var(--theme-primary))]">

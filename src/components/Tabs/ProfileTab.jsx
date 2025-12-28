@@ -7,14 +7,13 @@ export default function ProfileTab({
   saveUsername = () => {}, 
   showEmail = false, 
   toggleEmailVisibility = () => {}, 
-  colors = {}, 
   isDark = false,
   lastChange = null,
   user = null,
   appStyle = 'emerald',
   setAppStyle = () => {},
   showToast = () => {},
-  visitData = { streak: 0 } // Added visitData
+  visitData = { streak: 0 }
 }) {
   const provider = user?.app_metadata?.provider || 'account';
   const providerName = provider.charAt(0).toUpperCase() + provider.slice(1);
@@ -49,7 +48,7 @@ export default function ProfileTab({
         <div className="flex justify-between items-end ml-1">
           <label className="text-[10px] font-bold text-[rgb(var(--theme-primary))] uppercase tracking-widest">Identity</label>
           {daysLeft && (
-            <span className="text-[9px] font-bold text-zinc-500 uppercase flex items-center gap-1">
+            <span className="text-[9px] font-bold opacity-40 uppercase flex items-center gap-1">
               <Calendar size={10} /> Lock: {daysLeft}d
             </span>
           )}
@@ -68,7 +67,7 @@ export default function ProfileTab({
           disabled={!!daysLeft}
           className={`w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all ${
             daysLeft 
-            ? 'bg-zinc-500/10 text-zinc-500 cursor-not-allowed' 
+            ? 'opacity-20 cursor-not-allowed grayscale' 
             : 'bg-[rgb(var(--theme-primary))] text-white shadow-lg shadow-[var(--theme-primary-glow)] active:scale-95'
           }`}
         >
@@ -76,20 +75,20 @@ export default function ProfileTab({
         </button>
       </div>
 
-      <div className="h-[1px] w-full bg-white/5" />
+      <div className="h-[1px] w-full bg-current opacity-5" />
 
       {/* VISUAL INTERFACE (THEME SWITCHER) */}
       <div className="space-y-4 px-1">
         <div className="space-y-0.5">
-          <p className={`text-xs font-bold uppercase tracking-tight ${isDark ? 'text-white' : 'text-zinc-800'}`}>Visual Interface</p>
-          <p className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-emerald-800/50'}`}>Select your HUD aesthetic</p>
+          <p className="text-xs font-bold uppercase tracking-tight">Visual Interface</p>
+          <p className="text-[10px] opacity-40">Select your HUD aesthetic</p>
         </div>
 
         <div className="grid grid-cols-2 gap-2 p-1.5 smart-glass border rounded-2xl">
           <button 
             onClick={() => setAppStyle('emerald')}
             className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
-              appStyle === 'emerald' ? 'bg-emerald-500 text-white shadow-lg' : 'text-zinc-500 hover:text-emerald-500'
+              appStyle === 'emerald' ? 'bg-emerald-500 text-white shadow-lg' : 'opacity-40 hover:opacity-100'
             }`}
           >
             <Leaf size={14} />
@@ -99,7 +98,7 @@ export default function ProfileTab({
           <button 
             onClick={() => setAppStyle('winter')}
             className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
-              appStyle === 'winter' ? 'bg-blue-400 text-white shadow-lg' : 'text-zinc-500 hover:text-blue-400'
+              appStyle === 'winter' ? 'bg-blue-400 text-white shadow-lg' : 'opacity-40 hover:opacity-100'
             }`}
           >
             <Snowflake size={14} />
@@ -109,7 +108,7 @@ export default function ProfileTab({
           <button 
             onClick={() => setAppStyle('koi')}
             className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
-              appStyle === 'koi' ? 'bg-[#EA4426] text-white shadow-lg' : 'text-zinc-500 hover:text-[#EA4426]'
+              appStyle === 'koi' ? 'bg-[#EA4426] text-white shadow-lg' : 'opacity-40 hover:opacity-100'
             }`}
           >
             <Waves size={14} />
@@ -119,7 +118,7 @@ export default function ProfileTab({
           <button 
             onClick={() => setAppStyle('sakura')}
             className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
-              appStyle === 'sakura' ? 'bg-[#F4ACB7] text-white shadow-lg' : 'text-zinc-500 hover:text-[#F4ACB7]'
+              appStyle === 'sakura' ? 'bg-[#F4ACB7] text-white shadow-lg' : 'opacity-40 hover:opacity-100'
             }`}
           >
             <Flower size={14} />
@@ -129,7 +128,7 @@ export default function ProfileTab({
           <button 
             onClick={() => setAppStyle('salmon')}
             className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
-              appStyle === 'salmon' ? 'bg-[#FF8C73] text-white shadow-lg' : 'text-zinc-500 hover:text-[#FF8C73]'
+              appStyle === 'salmon' ? 'bg-[#FF8C73] text-white shadow-lg' : 'opacity-40 hover:opacity-100'
             }`}
           >
             <Fish size={14} />
@@ -139,7 +138,7 @@ export default function ProfileTab({
           <button 
             onClick={() => setAppStyle('abyss')}
             className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
-              appStyle === 'abyss' ? 'bg-[#FB923C] text-white shadow-lg' : 'text-zinc-500 hover:text-[#FB923C]'
+              appStyle === 'abyss' ? 'bg-[#FB923C] text-white shadow-lg' : 'opacity-40 hover:opacity-100'
             }`}
           >
             <Shell size={14} />
@@ -159,15 +158,12 @@ export default function ProfileTab({
               appStyle === 'supernova' 
               ? 'bg-purple-600 text-white shadow-lg' 
               : isSupernovaLocked 
-                ? 'bg-zinc-800/20 text-zinc-600 cursor-not-allowed opacity-60' 
-                : 'text-zinc-500 hover:text-purple-500'
+                ? 'bg-current/5 opacity-40 cursor-not-allowed' 
+                : 'opacity-40 hover:opacity-100'
             }`}
           >
-            {isSupernovaLocked ? <Lock size={12} className="text-zinc-500" /> : <Sparkles size={14} />}
+            {isSupernovaLocked ? <Lock size={12} /> : <Sparkles size={14} />}
             <span className="text-[10px] font-bold uppercase">Supernova</span>
-            {isSupernovaLocked && (
-               <div className="absolute inset-0 bg-black/5 pointer-events-none" />
-            )}
           </button>
         </div>
       </div>
@@ -175,13 +171,13 @@ export default function ProfileTab({
       {/* EMAIL TOGGLE */}
       <div className="flex items-center justify-between px-1">
         <div className="space-y-0.5">
-          <p className={`text-xs font-bold uppercase tracking-tight ${isDark ? 'text-white' : 'text-zinc-800'}`}>Display Email</p>
-          <p className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-emerald-800/50'}`}>Show contact in header</p>
+          <p className="text-xs font-bold uppercase tracking-tight">Display Email</p>
+          <p className="text-[10px] opacity-40">Show contact in header</p>
         </div>
         
         <button 
           onClick={toggleEmailVisibility}
-          className={`w-12 h-6 rounded-full transition-all relative ${showEmail ? 'bg-[rgb(var(--theme-primary))]' : (isDark ? 'bg-zinc-700' : 'bg-zinc-300')}`}
+          className={`w-12 h-6 rounded-full transition-all relative ${showEmail ? 'bg-[rgb(var(--theme-primary))]' : 'bg-current/10'}`}
         >
           <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${showEmail ? 'left-7' : 'left-1'}`} />
         </button>

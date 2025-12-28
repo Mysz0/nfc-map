@@ -13,7 +13,6 @@ export default function HomeTab({
   foundCount, 
   unlockedSpots = [], 
   spots = {}, 
-  colors, 
   streak,
   spotStreaks = {},
   isDark 
@@ -88,7 +87,11 @@ export default function HomeTab({
           <div className="flex flex-col gap-3 animate-in zoom-in-95 duration-500">
             <div className="flex items-center gap-3 smart-glass p-5 rounded-[2.5rem] border relative overflow-hidden">
               <div className={`${
-                isLoggedToday ? 'bg-zinc-800' : canClaim ? 'bg-[rgb(var(--theme-primary))] shadow-[0_0_20px_var(--theme-primary-glow)]' : 'bg-orange-500'
+                isLoggedToday 
+                  ? 'bg-zinc-800' 
+                  : canClaim 
+                    ? 'bg-[rgb(var(--theme-primary))] shadow-[0_0_20px_var(--theme-primary-glow)]' 
+                    : 'bg-orange-500'
               } p-2.5 rounded-xl text-white transition-colors`}>
                 <Radar size={18} className={isLoggedToday ? "" : "animate-pulse"} />
               </div>
@@ -104,13 +107,11 @@ export default function HomeTab({
               {distance !== null && !isLoggedToday && (
                 <div className="text-right">
                   <p className={`text-[11px] font-black uppercase tracking-tighter ${
-                    canClaim 
-                      ? 'text-[rgb(var(--theme-primary))]' 
-                      : (isDark ? 'opacity-50' : 'text-zinc-400')
+                    canClaim ? 'text-[rgb(var(--theme-primary))]' : 'opacity-50'
                   }`}>
                     {distance}m
                   </p>
-                  <p className={`text-[7px] font-bold uppercase ${isDark ? 'opacity-50' : 'text-zinc-400'}`}>
+                  <p className="text-[7px] font-bold uppercase opacity-50">
                     Range
                   </p>
                 </div>
@@ -154,12 +155,17 @@ export default function HomeTab({
         )}
       </div>
 
-      <StatCard mainVal={totalPoints} subVal={foundCount} streak={streak} colors={colors} />
+      <StatCard 
+        mainVal={totalPoints} 
+        subVal={foundCount} 
+        streak={streak} 
+        label="Global Assets"
+      />
 
       {/* SEARCH AND NODES LIST */}
       <div className="space-y-3 px-1">
-        <div className="flex gap-2 h-14 w-full"> {/* Parent Row */}
-          <div className="relative flex-1"> {/* Flex-1 ensures it takes all remaining space */}
+        <div className="flex gap-2 h-14 w-full">
+          <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30" size={14} />
             <input 
               type="text"
@@ -170,7 +176,7 @@ export default function HomeTab({
             />
           </div>
 
-          <div className="relative w-[120px] flex-shrink-0" ref={selectRef}> {/* Fixed width and zero shrink */}
+          <div className="relative w-[120px] flex-shrink-0" ref={selectRef}>
             <button 
               onClick={() => setIsSelectOpen(!isSelectOpen)}
               className="w-full h-full px-2 smart-glass border rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase active:scale-95 transition-all"
@@ -185,9 +191,7 @@ export default function HomeTab({
                   <button
                     key={opt.id}
                     onClick={() => { setSortBy(opt.id); setIsSelectOpen(false); }}
-                    className={`w-full flex items-center justify-between px-4 py-3 transition-colors ${
-                      isDark ? 'hover:bg-white/10' : 'hover:bg-black/5'
-                    }`}
+                    className="w-full flex items-center justify-between px-4 py-3 transition-colors hover:bg-[rgba(var(--theme-primary),0.05)]"
                   >
                     <div className="flex items-center gap-3">
                       <opt.icon size={14} className={sortBy === opt.id ? 'text-[rgb(var(--theme-primary))]' : 'opacity-40'} />
@@ -240,7 +244,7 @@ export default function HomeTab({
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-[11px] font-black transition-colors duration-500">
+                      <p className="text-[11px] font-black">
                         +{node.points}XP
                       </p>
                     </div>

@@ -1,7 +1,17 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Package, Sparkles, Coins, Zap, Maximize, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { 
+  ShoppingCart, 
+  Package, 
+  Sparkles, 
+  Coins, 
+  Zap, 
+  Maximize, 
+  CheckCircle2, 
+  Clock, 
+  AlertCircle 
+} from 'lucide-react';
 
-export default function StoreTab({ totalPoints, colors, shopItems = [], inventory = [], onBuy, onActivate, isDark }) {
+export default function StoreTab({ totalPoints, shopItems = [], inventory = [], onBuy, onActivate, isDark }) {
   const [view, setView] = useState('shop');
   const [confirmItem, setConfirmItem] = useState(null);
 
@@ -16,24 +26,24 @@ export default function StoreTab({ totalPoints, colors, shopItems = [], inventor
       {/* Confirmation Modal */}
       {confirmItem && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
-          <div className="bg-zinc-900 border border-white/10 p-8 rounded-[2.5rem] w-full max-w-xs text-center shadow-2xl animate-in zoom-in duration-300">
-            <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="smart-glass border border-white/10 p-8 rounded-[2.5rem] w-full max-w-xs text-center shadow-2xl animate-in zoom-in duration-300">
+            <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-yellow-500/20">
               <AlertCircle className="text-yellow-500" size={32} />
             </div>
-            <h3 className="text-xl font-black text-white mb-2">Confirm?</h3>
-            <p className="text-zinc-400 text-xs mb-6 uppercase tracking-widest font-bold">
+            <h3 className="text-xl font-black mb-2">Confirm?</h3>
+            <p className="opacity-50 text-[10px] mb-6 uppercase tracking-widest font-bold">
               Spend {confirmItem.price} XP for {confirmItem.name}?
             </p>
             <div className="flex gap-3">
               <button 
                 onClick={() => setConfirmItem(null)} 
-                className="flex-1 py-3 rounded-2xl bg-white/5 text-white font-bold text-[10px] uppercase tracking-widest"
+                className="flex-1 py-4 rounded-2xl bg-current/10 font-bold text-[10px] uppercase tracking-widest active:scale-95 transition-transform"
               >
                 Cancel
               </button>
               <button 
                 onClick={() => { onBuy(confirmItem); setConfirmItem(null); }} 
-                className="flex-1 py-3 rounded-2xl bg-white text-black font-black text-[10px] uppercase tracking-widest"
+                className="flex-1 py-4 rounded-2xl bg-[rgb(var(--theme-primary))] text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-[var(--theme-primary-glow)] active:scale-95 transition-transform"
               >
                 Confirm
               </button>
@@ -43,32 +53,32 @@ export default function StoreTab({ totalPoints, colors, shopItems = [], inventor
       )}
 
       {/* Balance Card */}
-      <div className={`${colors.card} p-6 rounded-[2.5rem] border border-white/5 overflow-hidden relative`}>
+      <div className="smart-glass p-8 rounded-[3rem] border border-current/5 overflow-hidden relative shadow-xl">
         <div className="relative z-10">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50 mb-1">Available Balance</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-1">Available Balance</p>
           <div className="flex items-center gap-2">
             <Coins className="text-yellow-500" size={20} />
-            <h3 className={`text-3xl font-black tracking-tighter ${isDark ? 'text-[color:var(--theme-text-title-dark)]' : 'text-[color:var(--theme-text-title-light)]'}`}>
+            <h3 className="text-4xl font-black tracking-tighter">
               {totalPoints?.toLocaleString() || 0}
             </h3>
-            <span className={`text-xs font-bold opacity-40 mt-2 ${isDark ? 'text-white' : 'text-zinc-900'}`}>XP</span>
+            <span className="text-xs font-bold opacity-30 mt-2">XP</span>
           </div>
         </div>
         <div 
-          className="absolute -right-4 -top-4 opacity-10" 
+          className="absolute -right-4 -top-4 opacity-10 rotate-12" 
           style={{ color: 'rgb(var(--theme-primary))' }}
         >
-          <Sparkles size={120} />
+          <Sparkles size={140} />
         </div>
       </div>
 
       {/* Switcher */}
-      <div className="flex p-1.5 bg-white/5 rounded-[2rem] border border-white/5 mx-4">
-        <button onClick={() => setView('shop')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[1.6rem] transition-all ${view === 'shop' ? 'bg-[rgb(var(--theme-primary))] text-zinc-950 shadow-lg' : 'text-zinc-500'}`}>
+      <div className="flex p-1.5 smart-glass rounded-[2rem] border border-current/5 mx-4">
+        <button onClick={() => setView('shop')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[1.6rem] transition-all duration-500 ${view === 'shop' ? 'bg-[rgb(var(--theme-primary))] text-white shadow-lg shadow-[var(--theme-primary-glow)]' : 'opacity-40'}`}>
           <ShoppingCart size={14} />
           <span className="text-[10px] font-black uppercase tracking-widest">Market</span>
         </button>
-        <button onClick={() => setView('inventory')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[1.6rem] transition-all ${view === 'inventory' ? 'bg-[rgb(var(--theme-primary))] text-zinc-950 shadow-lg' : 'text-zinc-500'}`}>
+        <button onClick={() => setView('inventory')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[1.6rem] transition-all duration-500 ${view === 'inventory' ? 'bg-[rgb(var(--theme-primary))] text-white shadow-lg shadow-[var(--theme-primary-glow)]' : 'opacity-40'}`}>
           <Package size={14} />
           <span className="text-[10px] font-black uppercase tracking-widest">Inventory</span>
         </button>
@@ -77,25 +87,25 @@ export default function StoreTab({ totalPoints, colors, shopItems = [], inventor
       <div className="grid grid-cols-1 gap-4 px-2">
         {view === 'shop' ? (
           shopItems.map((item) => (
-            <div key={item.id} className={`${colors.card} p-5 rounded-[2rem] border border-white/5 flex items-center justify-between group`}>
+            <div key={item.id} className="smart-glass p-5 rounded-[2.5rem] border border-current/5 flex items-center justify-between group transition-all hover:border-[rgb(var(--theme-primary))]/20">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center">
-                  {iconMap[item.icon_name] || <Sparkles />}
+                <div className="w-14 h-14 rounded-2xl bg-current/[0.03] flex items-center justify-center border border-current/5">
+                  {iconMap[item.icon_name] || <Sparkles className="opacity-20" />}
                 </div>
                 <div>
-                  <h4 className={`font-bold text-sm ${isDark ? 'text-[color:var(--theme-text-title-dark)]' : 'text-[color:var(--theme-text-title-light)]'}`}>
+                  <h4 className="font-bold text-sm leading-none mb-1">
                     {item.name}
                   </h4>
-                  <p className="text-[10px] text-zinc-400 max-w-[150px] leading-tight">{item.description}</p>
+                  <p className="text-[10px] opacity-40 max-w-[150px] font-medium leading-tight">{item.description}</p>
                 </div>
               </div>
               <button 
                 onClick={() => setConfirmItem(item)}
                 disabled={totalPoints < item.price}
-                className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-tighter transition-all ${
+                className={`px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-tighter transition-all ${
                   totalPoints >= item.price 
-                  ? 'bg-white text-zinc-950 active:scale-95 shadow-xl shadow-white/5' 
-                  : 'bg-white/5 text-zinc-600 cursor-not-allowed'
+                  ? 'bg-current text-white dark:text-black active:scale-95 shadow-lg' 
+                  : 'opacity-10 cursor-not-allowed'
                 }`}
               >
                 {item.price} XP
@@ -104,32 +114,27 @@ export default function StoreTab({ totalPoints, colors, shopItems = [], inventor
           ))
         ) : (
           inventory.length > 0 ? (
-            /* FIXED POSITIONING: Sort ONLY by item name or ID to keep them static */
             [...inventory]
-              .sort((a, b) => {
-                // This keeps items in the same spot regardless of active status
-                return (a.shop_items?.name || "").localeCompare(b.shop_items?.name || "");
-              })
+              .sort((a, b) => (a.shop_items?.name || "").localeCompare(b.shop_items?.name || ""))
               .map((inv) => (
-              <div key={inv.id} className={`${colors.card} p-5 rounded-[2rem] border border-white/5 flex items-center gap-4 relative overflow-hidden group`}>
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center z-10 relative ${inv.is_active ? 'bg-[rgb(var(--theme-primary))]/20 shadow-[0_0_15px_rgba(var(--theme-primary),0.3)]' : 'bg-white/5'}`}>
-                  {inv.is_active ? <CheckCircle2 size={20} className="text-[rgb(var(--theme-primary))]" /> : (iconMap[inv.shop_items?.icon_name] || <Package size={20} />)}
+              <div key={inv.id} className="smart-glass p-5 rounded-[2.5rem] border border-current/5 flex items-center gap-4 relative overflow-hidden group">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center z-10 relative transition-all duration-500 ${inv.is_active ? 'bg-[rgb(var(--theme-primary))]/20 shadow-[0_0_15px_rgba(var(--theme-primary),0.3)]' : 'bg-current/[0.03]'}`}>
+                  {inv.is_active ? <CheckCircle2 size={24} className="text-[rgb(var(--theme-primary))]" /> : (iconMap[inv.shop_items?.icon_name] || <Package size={24} className="opacity-40" />)}
                   
-                  {/* Quantity Badge */}
                   {inv.quantity > 0 && (
-                    <div className="absolute -top-1 -right-1 bg-white text-zinc-950 text-[8px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-zinc-900 shadow-lg">
-                      x{inv.quantity}
+                    <div className="absolute -top-1 -right-1 bg-[rgb(var(--theme-primary))] text-white text-[8px] font-black w-6 h-6 rounded-full flex items-center justify-center border-4 border-[var(--theme-map-bg)] shadow-lg">
+                      {inv.quantity}
                     </div>
                   )}
                 </div>
                 
                 <div className="flex-1 z-10">
-                  <h4 className={`font-bold text-sm ${isDark ? 'text-[color:var(--theme-text-title-dark)]' : 'text-[color:var(--theme-text-title-light)]'}`}>
+                  <h4 className="font-bold text-sm leading-none mb-1">
                     {inv.shop_items?.name}
                   </h4>
                   <div className="flex items-center gap-2">
-                    <p className={`text-[9px] font-black uppercase tracking-widest ${inv.is_active ? 'text-[rgb(var(--theme-primary))]' : 'text-zinc-500'}`}>
-                      {inv.is_active ? 'Active' : 'In Stock'}
+                    <p className={`text-[9px] font-black uppercase tracking-widest ${inv.is_active ? 'text-[rgb(var(--theme-primary))]' : 'opacity-40'}`}>
+                      {inv.is_active ? 'System Online' : 'Standby'}
                     </p>
                     {inv.is_active && inv.timeLeft && (
                       <div className="flex items-center gap-1 bg-black/20 px-2 py-0.5 rounded-full border border-white/5">
@@ -140,36 +145,33 @@ export default function StoreTab({ totalPoints, colors, shopItems = [], inventor
                   </div>
                 </div>
 
-                {/* Activation/Extension Button */}
                 {inv.quantity > 0 && (
                   <button 
                     onClick={() => onActivate(inv.id)}
-                    className="z-10 text-[9px] font-black bg-[rgb(var(--theme-primary))]/10 text-[rgb(var(--theme-primary))] px-4 py-2 rounded-xl hover:bg-[rgb(var(--theme-primary))]/20 transition-colors border border-[rgb(var(--theme-primary))]/20 active:scale-95 uppercase tracking-widest"
+                    className="z-10 text-[9px] font-black bg-[rgb(var(--theme-primary))]/10 text-[rgb(var(--theme-primary))] px-4 py-2.5 rounded-xl hover:bg-[rgb(var(--theme-primary))]/20 transition-all border border-[rgb(var(--theme-primary))]/20 active:scale-90 uppercase tracking-widest"
                   >
-                    {inv.is_active ? 'Extend' : 'Activate'}
+                    {inv.is_active ? 'Extend' : 'Engage'}
                   </button>
                 )}
 
-                {/* Progress bar */}
                 {inv.is_active && inv.progress !== undefined && (
-                  <div className="absolute bottom-0 left-0 w-full h-1 bg-white/5 overflow-hidden">
+                  <div className="absolute bottom-0 left-0 w-full h-1 bg-current/5 overflow-hidden">
                     <div 
-                      className="h-full bg-[rgb(var(--theme-primary))] transition-all duration-1000 ease-linear shadow-[0_0_8px_rgba(var(--theme-primary),0.5)]"
+                      className="h-full bg-[rgb(var(--theme-primary))] transition-all duration-1000 ease-linear shadow-[0_0_10px_var(--theme-primary-glow)]"
                       style={{ width: `${inv.progress}%` }}
                     />
                   </div>
                 )}
-
-                {/* Glow for active items */}
+                
                 {inv.is_active && (
-                  <div className="absolute inset-0 bg-[rgb(var(--theme-primary))]/5 pointer-events-none" />
+                  <div className="absolute inset-0 bg-[rgb(var(--theme-primary))]/5 pointer-events-none animate-pulse" />
                 )}
               </div>
             ))
           ) : (
-            <div className="col-span-full text-center py-12 opacity-30">
-              <Package size={40} className="mx-auto mb-3" />
-              <p className="text-xs font-bold uppercase tracking-widest">your inventory is empty</p>
+            <div className="col-span-full text-center py-20 opacity-20">
+              <Package size={48} className="mx-auto mb-4 stroke-[1px]" />
+              <p className="text-[10px] font-black uppercase tracking-[0.3em]">Neural link empty</p>
             </div>
           )
         )}
