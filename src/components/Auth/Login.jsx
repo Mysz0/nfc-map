@@ -35,7 +35,7 @@ export default function Login({ theme, setTheme, isDark, colors }) {
       </div>
 
       <h1 className={`text-4xl font-black mb-10 tracking-tighter italic uppercase ${colors.text}`}>
-        SpotHunt<span className="text-emerald-500">.</span>
+        UrbanRadar<span className="text-emerald-500">.</span>
       </h1>
       
       <div className="flex flex-col gap-4 w-full max-w-xs">
