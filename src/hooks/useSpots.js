@@ -135,6 +135,8 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
 
     targets.forEach(spot => {
       const info = spotStreaks[spot.id] || { last_claim: null, streak: 0 };
+      
+      // If claimed today, we skip it
       if (info.last_claim && new Date(info.last_claim).toDateString() === todayStr) return;
 
       const nextStreak = (Number(info.streak) || 0) + 1;
@@ -163,10 +165,25 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
 
   const removeSpot = async (id) => {
     try {
-      await supabase.from('user_spots').delete().eq('user_id', user.id).eq('spot_id', id);
+      // 1. Delete from DB
+      const { error } = await supabase.from('user_spots').delete().eq('user_id', user.id).eq('spot_id', id);
+      if (error) throw error;
+
+      // 2. Clear Unlocked List
       setUnlockedSpots(prev => prev.filter(s => s !== String(id)));
+
+      // 3. IMPORTANT: Clear the streak/claim record from local state so it doesn't block re-claiming
+      setSpotStreaks(prev => {
+        const updated = { ...prev };
+        delete updated[id];
+        return updated;
+      });
+
       showToast("Spot history cleared");
-    } catch (err) { showToast("Removal failed", "error"); }
+    } catch (err) { 
+      console.error(err);
+      showToast("Removal failed", "error"); 
+    }
   };
 
   return { spots, setSpots, unlockedSpots, spotStreaks, setSpotStreaks, claimSpot, removeSpot, getMultiplier, activeXPBoost, activeRadiusBoost };
