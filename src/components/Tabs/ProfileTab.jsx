@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Leaf, Snowflake, Waves, Flower, Shell, Fish } from 'lucide-react';
+import { Calendar, Leaf, Snowflake, Waves, Flower, Shell, Fish, Lock, Sparkles } from 'lucide-react';
 
 export default function ProfileTab({ 
   tempUsername = "", 
@@ -13,10 +13,14 @@ export default function ProfileTab({
   user = null,
   appStyle = 'emerald',
   setAppStyle = () => {},
-  showToast = () => {} 
+  showToast = () => {},
+  visitData = { streak: 0 } // Added visitData
 }) {
   const provider = user?.app_metadata?.provider || 'account';
   const providerName = provider.charAt(0).toUpperCase() + provider.slice(1);
+
+  const streak = visitData?.streak || 0;
+  const isSupernovaLocked = streak < 50;
 
   const handleSaveIdentity = () => {
     const currentUsername = user?.username || "";
@@ -122,7 +126,6 @@ export default function ProfileTab({
             <span className="text-[10px] font-bold uppercase">Sakura</span>
           </button>
 
-          {/* NEW SALMON THEME */}
           <button 
             onClick={() => setAppStyle('salmon')}
             className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
@@ -141,6 +144,30 @@ export default function ProfileTab({
           >
             <Shell size={14} />
             <span className="text-[10px] font-bold uppercase">Abyss</span>
+          </button>
+
+          {/* NEW LOCKED THEME: SUPERNOVA */}
+          <button 
+            onClick={() => {
+              if (isSupernovaLocked) {
+                showToast(`Unlocks at 50 day streak! (${streak}/50)`, "error");
+              } else {
+                setAppStyle('supernova');
+              }
+            }}
+            className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all relative overflow-hidden ${
+              appStyle === 'supernova' 
+              ? 'bg-purple-600 text-white shadow-lg' 
+              : isSupernovaLocked 
+                ? 'bg-zinc-800/20 text-zinc-600 cursor-not-allowed opacity-60' 
+                : 'text-zinc-500 hover:text-purple-500'
+            }`}
+          >
+            {isSupernovaLocked ? <Lock size={12} className="text-zinc-500" /> : <Sparkles size={14} />}
+            <span className="text-[10px] font-bold uppercase">Supernova</span>
+            {isSupernovaLocked && (
+               <div className="absolute inset-0 bg-black/5 pointer-events-none" />
+            )}
           </button>
         </div>
       </div>

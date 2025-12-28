@@ -30,7 +30,6 @@ export default function HomeTab({
     ? Math.round(getDistance(userLocation.lat, userLocation.lng, currentSpot.lat, currentSpot.lng))
     : null;
 
-  // --- LOGIC: Check if the CURRENT active spot is claimed today ---
   const isLoggedToday = useMemo(() => {
     if (!activeSpotId) return false;
     const personalData = spotStreaks[activeSpotId];
@@ -54,10 +53,9 @@ export default function HomeTab({
 
   const filteredAndSortedNodes = useMemo(() => {
     return unlockedSpots
-      .filter(id => spots[id]) // Ensure spot exists in data
+      .filter(id => spots[id])
       .map(id => {
         const sInfo = spotStreaks[id];
-        // A node is ready if it wasn't claimed today
         const isReady = sInfo?.last_claim 
           ? new Date(sInfo.last_claim).toDateString() !== todayStr 
           : true;
@@ -88,7 +86,7 @@ export default function HomeTab({
       <div className="flex flex-col gap-3">
         {(isNearSpot && activeSpotId && currentSpot) ? (
           <div className="flex flex-col gap-3 animate-in zoom-in-95 duration-500">
-            <div className={`flex items-center gap-3 smart-glass p-5 rounded-[2.5rem] border relative overflow-hidden ${isDark ? 'bg-zinc-900/60 border-white/10' : 'border-[rgb(var(--theme-primary))]/10'}`}>
+            <div className="flex items-center gap-3 smart-glass p-5 rounded-[2.5rem] border relative overflow-hidden">
               <div className={`${
                 isLoggedToday ? 'bg-zinc-800' : canClaim ? 'bg-[rgb(var(--theme-primary))] shadow-[0_0_20px_var(--theme-primary-glow)]' : 'bg-orange-500'
               } p-2.5 rounded-xl text-white transition-colors`}>
@@ -142,7 +140,7 @@ export default function HomeTab({
             </button>
           </div>
         ) : (
-          <div className={`smart-glass p-10 rounded-[3rem] border relative overflow-hidden group ${isDark ? 'bg-zinc-900/40 border-white/10' : 'border-[rgb(var(--theme-primary))]/10'}`}>
+          <div className="smart-glass p-10 rounded-[3rem] border relative overflow-hidden group">
              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(var(--theme-primary),0.1)_0%,transparent_70%)] animate-pulse" />
              <div className="relative flex flex-col items-center justify-center">
                 <div className="relative mb-4">
@@ -160,38 +158,42 @@ export default function HomeTab({
 
       {/* SEARCH AND NODES LIST */}
       <div className="space-y-3 px-1">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
+        <div className="flex gap-2 h-14 w-full"> {/* Parent Row */}
+          <div className="relative flex-1"> {/* Flex-1 ensures it takes all remaining space */}
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30" size={14} />
             <input 
               type="text"
               placeholder="FILTER NODES..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full smart-glass border rounded-2xl py-4 pl-11 pr-4 text-[10px] font-black focus:outline-none focus:border-[rgb(var(--theme-primary))]/50 transition-all uppercase placeholder:opacity-30 ${isDark ? 'bg-zinc-900/60 border-white/10' : 'bg-white'}`}
+              className="w-full h-full smart-glass border rounded-2xl pl-11 pr-4 text-[10px] font-black focus:outline-none focus:border-[rgb(var(--theme-primary))]/50 transition-all uppercase placeholder:opacity-30"
             />
           </div>
 
-          <div className="relative" ref={selectRef}>
+          <div className="relative w-[120px] flex-shrink-0" ref={selectRef}> {/* Fixed width and zero shrink */}
             <button 
               onClick={() => setIsSelectOpen(!isSelectOpen)}
-              className={`h-full px-4 smart-glass border rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase active:scale-95 transition-all ${isDark ? 'bg-zinc-900/60 border-white/10' : 'bg-white'}`}
+              className="w-full h-full px-2 smart-glass border rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase active:scale-95 transition-all"
             >
-              <span className="opacity-50">{sortBy.toUpperCase()}</span>
-              <ChevronDown size={14} className={`transition-transform duration-300 ${isSelectOpen ? 'rotate-180' : ''}`} />
+              <span className="opacity-50 truncate">{sortBy.toUpperCase()}</span>
+              <ChevronDown size={12} className={`flex-shrink-0 transition-transform duration-300 ${isSelectOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isSelectOpen && (
-              <div className={`absolute right-0 mt-2 w-48 border rounded-2xl shadow-2xl z-[100] py-2 animate-in fade-in zoom-in-95 duration-200 ${isDark ? 'bg-zinc-950 border-white/10' : 'bg-white border-[rgb(var(--theme-primary))]/10'}`}>
+              <div className="absolute right-0 mt-2 w-48 border rounded-2xl shadow-2xl z-[100] py-2 animate-in fade-in zoom-in-95 duration-200 smart-glass overflow-hidden border-white/10">
                 {sortOptions.map((opt) => (
                   <button
                     key={opt.id}
                     onClick={() => { setSortBy(opt.id); setIsSelectOpen(false); }}
-                    className={`w-full flex items-center justify-between px-4 py-3 transition-colors ${isDark ? 'hover:bg-white/5 text-zinc-100' : 'hover:bg-emerald-50 text-emerald-900'}`}
+                    className={`w-full flex items-center justify-between px-4 py-3 transition-colors ${
+                      isDark ? 'hover:bg-white/10' : 'hover:bg-black/5'
+                    }`}
                   >
                     <div className="flex items-center gap-3">
                       <opt.icon size={14} className={sortBy === opt.id ? 'text-[rgb(var(--theme-primary))]' : 'opacity-40'} />
-                      <span className="text-[10px] font-black uppercase">{opt.label}</span>
+                      <span className="text-[10px] font-black uppercase tracking-tight">
+                        {opt.label}
+                      </span>
                     </div>
                     {sortBy === opt.id && <Check size={14} className="text-[rgb(var(--theme-primary))]" />}
                   </button>
@@ -209,17 +211,14 @@ export default function HomeTab({
           ) : (
             filteredAndSortedNodes.map(node => {
               const rank = getNodeRank(node.streakCount);
-              
               return (
                 <div key={node.id} className="relative group transition-all">
                   {node.isReady && (
                     <div className="absolute -left-1 top-4 bottom-4 w-1 bg-[rgb(var(--theme-primary))] rounded-full z-10 shadow-[0_0_10px_var(--theme-primary-glow)]" />
                   )}
-                  <div className={`smart-glass border p-5 rounded-[2.2rem] flex items-center justify-between transition-all ${
-                    isDark ? 'bg-zinc-900/60 border-white/10' : 'bg-white border-zinc-100 shadow-sm'
-                  }`}>
+                  <div className="node-card-animate group smart-glass border p-5 rounded-[2.2rem] flex items-center justify-between transition-all duration-500 hover:scale-[1.02] active:scale-[0.98]">
                     <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${rank.bg} ${rank.color}`}>
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110 ${rank.bg} ${rank.color}`}>
                         {node.streakCount >= 10 ? <Trophy size={18} /> : node.streakCount > 1 ? <Flame size={18} fill="currentColor" /> : <CheckCircle2 size={18} />}
                       </div>
                       <div>
@@ -227,7 +226,7 @@ export default function HomeTab({
                           {node.name}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
-                          <span className={`text-[9px] font-black uppercase tracking-tighter ${
+                          <span className={`text-[9px] font-black uppercase tracking-tighter transition-colors duration-500 ${
                             node.isReady ? 'text-[rgb(var(--theme-primary))]' : 'opacity-40'
                           }`}>
                             {node.isReady ? 'Sync Required' : 'Secured'}
@@ -241,7 +240,7 @@ export default function HomeTab({
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={`text-[11px] font-black ${isDark ? 'text-zinc-100' : 'text-zinc-700'}`}>
+                      <p className="text-[11px] font-black transition-colors duration-500">
                         +{node.points}XP
                       </p>
                     </div>

@@ -83,6 +83,20 @@
   --theme-map-bg-light: #fffaf9;
   --theme-map-bg-dark: #080302;
 }
+
+[data-theme='supernova'] {
+  --theme-primary: 147, 51, 234;
+  --theme-primary-glow: rgba(147, 51, 234, 0.8);
+  --theme-bg-glass-light: rgba(250, 245, 255, 0.8); 
+  --theme-bg-glass-dark: rgba(18, 10, 31, 0.9);
+  --theme-border-light: rgba(147, 51, 234, 0.25);
+  --theme-text-title-light: #4c1d95;
+  --theme-text-title-dark: #f5f3ff; 
+  --theme-text-light: #5b21b6;
+  --theme-map-bg-light: #faf5ff;
+  --theme-map-bg-dark: #050208;
+}
+
 /* --- BASE STYLES --- */
 * {
   margin: 0;

@@ -177,7 +177,8 @@ export default function App() {
             user={user}
             appStyle={appStyle}     
             setAppStyle={setAppStyle}
-            showToast={showToast} // FIX: Now ProfileTab can show the "duplicate name" error
+            showToast={showToast}
+            visitData={visitData}
           />
         )}
 
