@@ -1,30 +1,54 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 // WINTER: Frost overlay & Shimmering Ice
 const WinterEffect = () => (
   <>
+    {/* 1. Subtle Frost Vignette (Edges) */}
+    <div className="fixed inset-0 pointer-events-none z-0" 
+         style={{ background: 'var(--frost-vignette)' }} />
+    
+    {/* 2. Global Cracked Ice & Frost Surface */}
     <div className="frozen-surface" />
-    <div className="fixed inset-0 pointer-events-none z-0 opacity-20" 
-         style={{ background: 'var(--ice-shimmer)', backgroundSize: '400% 400%', animation: 'shimmerMove 20s linear infinite' }} />
+
+    {/* No more "big bar" shimmer here */}
   </>
 );
 
 // SAKURA: Falling petals & Pink glow
-const SakuraEffect = () => (
-  <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-    <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,rgba(244,172,183,0.15),transparent_60%)]" />
-    <div className="absolute inset-0 opacity-30">
-      {[...Array(8)].map((_, i) => (
-        <div key={i} className="absolute bg-[rgb(var(--theme-primary))] rounded-full blur-[1px]"
-             style={{
-               width: '8px', height: '5px', left: `${Math.random() * 100}%`, top: '-5%',
-               animation: `fallingPetal ${10 + Math.random() * 10}s linear infinite`,
-               animationDelay: `${Math.random() * 5}s`
-             }} />
-      ))}
+const SakuraEffect = () => {
+  // Memoize the petals so they don't re-randomize on every render
+  const petals = useMemo(() => {
+    return [...Array(12)].map((_, i) => ({
+      id: i,
+      left: `${Math.random() * 100}%`,
+      duration: `${10 + Math.random() * 10}s`,
+      delay: `${Math.random() * 5}s`,
+      size: `${5 + Math.random() * 5}px`
+    }));
+  }, []);
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,rgba(244,172,183,0.15),transparent_60%)]" />
+      <div className="absolute inset-0 opacity-40">
+        {petals.map((p) => (
+          <div 
+            key={p.id} 
+            className="sakura-petal absolute bg-[rgb(var(--theme-primary))] rounded-full blur-[0.5px]"
+            style={{
+              width: p.size, 
+              height: '5px', 
+              left: p.left, 
+              top: '-5%',
+              animation: `fallingPetal ${p.duration} linear infinite`,
+              animationDelay: p.delay
+            }} 
+          />
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // KOI: Water ripples
 const KoiEffect = () => (
@@ -36,19 +60,30 @@ const KoiEffect = () => (
   </div>
 );
 
-// ABYSS: Floating bubbles & Deep sea light
-const AbyssEffect = () => (
-  <div className="fixed inset-0 pointer-events-none z-0">
-    {[...Array(12)].map((_, i) => (
-      <div key={i} className="absolute bg-white rounded-full opacity-10"
-           style={{
-             width: '4px', height: '4px', left: `${Math.random() * 100}%`, bottom: '-5%',
-             animation: `floatUp ${5 + Math.random() * 10}s ease-in infinite`,
-             animationDelay: `${Math.random() * 5}s`
-           }} />
-    ))}
-  </div>
-);
+// ABYSS: Floating bubbles
+const AbyssEffect = () => {
+  const bubbles = useMemo(() => {
+    return [...Array(12)].map((_, i) => ({
+      id: i,
+      left: `${Math.random() * 100}%`,
+      duration: `${5 + Math.random() * 10}s`,
+      delay: `${Math.random() * 5}s`
+    }));
+  }, []);
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-0">
+      {bubbles.map((b) => (
+        <div key={b.id} className="absolute bg-white rounded-full opacity-10"
+             style={{
+               width: '4px', height: '4px', left: b.left, bottom: '-5%',
+               animation: `floatUp ${b.duration} ease-in infinite`,
+               animationDelay: b.delay
+             }} />
+      ))}
+    </div>
+  );
+};
 
 // SUPERNOVA: Pulsing starfield
 const SupernovaEffect = () => (
@@ -59,13 +94,16 @@ const SupernovaEffect = () => (
   </div>
 );
 
-export default function ThemeAtmosphere({ activeStyle }) {
+function ThemeAtmosphere({ activeStyle }) {
   switch (activeStyle) {
     case 'winter': return <WinterEffect />;
     case 'sakura': return <SakuraEffect />;
     case 'koi': return <KoiEffect />;
     case 'abyss': return <AbyssEffect />;
     case 'supernova': return <SupernovaEffect />;
-    default: return null; // Emerald, Salmon, and Marble stay clean/minimal
+    default: return null;
   }
 }
+
+// WRAP IN MEMO: This prevents the whole component from re-rendering unless the theme actually changes
+export default React.memo(ThemeAtmosphere);

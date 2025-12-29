@@ -58,20 +58,24 @@
 [data-theme='winter'] {
   --theme-primary: 125, 211, 252;
   --theme-primary-glow: rgba(186, 230, 253, 0.9);
-  --theme-bg-glass: rgba(240, 249, 255, 0.75);
-  --theme-border: rgba(125, 211, 252, 0.3);
+  /* Brighter, more "icy" glass */
+  --theme-bg-glass: rgba(240, 249, 255, 0.3); 
+  --theme-border: rgba(255, 255, 255, 0.5);
   --theme-text-title: #0c4a6e;
-  --theme-text-sub: #0c4a6e;
+  --theme-text-sub: #0369a1;
   --theme-map-bg: #f0f9ff;
   --frost-pattern: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)' opacity='0.4'/%3E%3C/svg%3E");
   --ice-shimmer: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(186,230,253,0.2) 50%, rgba(255,255,255,0.4) 100%);
+  --ice-cracks: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0L50 40L120 20L200 80M200 200L150 140L80 180L0 120M0 200L60 140M200 0L140 60' stroke='white' stroke-opacity='0.15' stroke-width='1' fill='none'/%3E%3C/svg%3E");
+  --frost-vignette: radial-gradient(circle, transparent 50%, rgba(186, 230, 253, 0.1) 100%);
 }
+
 .dark[data-theme='winter'] {
-  --theme-bg-glass: rgba(7, 18, 38, 0.85);
+  --theme-bg-glass: rgba(7, 25, 45, 0.6);
   --theme-text-title: #f0f9ff; 
   --theme-map-bg: #020617;
-  --theme-border: rgba(255, 255, 255, 0.1);
-  --ice-shimmer: linear-gradient(135deg, rgba(12,74,110,0.2) 0%, rgba(7,18,38,0.5) 50%, rgba(12,74,110,0.2) 100%);
+  --theme-border: rgba(255, 255, 255, 0.15);
+  --frost-vignette: radial-gradient(circle, transparent 30%, rgba(125, 211, 252, 0.1) 100%);
 }
 
 /* --- ABYSS THEME --- */
