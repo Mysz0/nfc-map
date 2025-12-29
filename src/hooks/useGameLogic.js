@@ -42,20 +42,21 @@ export function useGameLogic(user, showToast) {
   }, []);
 
   const profile = useProfile(user, showToast, fetchLeaderboard);
-  
-  const spots = useSpots(
-    user, 
-    showToast, 
-    profile.totalPoints, 
-    profile.setTotalPoints, 
-    fetchLeaderboard
-  );
-  
+ 
   const store = useStore(
     user, 
     profile.totalPoints, 
     profile.setTotalPoints, 
     showToast
+  );
+
+  const spots = useSpots(
+    user, 
+    showToast, 
+    profile.totalPoints, 
+    profile.setTotalPoints, 
+    fetchLeaderboard,
+    store.bonuses
   );
 
   const { handleVote } = useVotes(user, spots.setSpots, spots.unlockedSpots);

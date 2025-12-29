@@ -72,6 +72,7 @@ export default function App() {
     inventory,
     buyItem,
     activateItem,
+    bonuses,
     customRadius,      
     claimRadius,        
     updateRadius,      
@@ -86,7 +87,8 @@ export default function App() {
     spots, 
     customRadius, 
     spotStreaks, 
-    claimRadius
+    claimRadius,
+    bonuses?.radiusBonus || 0
   );
 
   const themeMag = useMagnetic();
@@ -159,7 +161,8 @@ export default function App() {
         )}
         
         {activeTab === 'explore' && (
-          <ExploreTab 
+          <ExploreTab
+            key={`explore-map-${bonuses?.radiusBonus}`}
             mapCenter={mapCenter} 
             userLocation={userLocation} 
             isDark={isDark} 
@@ -168,7 +171,7 @@ export default function App() {
             claimRadius={claimRadius}
             customRadius={customRadius}
             onVote={handleVote}
-            radiusBonus={radiusBonus}
+            radiusBonus={bonuses?.radiusBonus || 0}
           />
         )}
         

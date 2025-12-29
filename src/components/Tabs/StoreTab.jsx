@@ -104,9 +104,9 @@ export default function StoreTab({ totalPoints, shopItems = [], inventory = [], 
                 disabled={totalPoints < item.price}
                 className={`px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-tighter transition-all ${
                   totalPoints >= item.price 
-                  ? 'bg-current text-white dark:text-black active:scale-95 shadow-lg' 
-                  : 'opacity-10 cursor-not-allowed'
-                }`}
+                  ? 'bg-[rgb(var(--theme-primary))] text-zinc-950 active:scale-95 shadow-lg shadow-[var(--theme-primary-glow)]' 
+                  : 'bg-zinc-800 text-zinc-500 cursor-not-allowed opacity-50'
+                  }`}
               >
                 {item.price} XP
               </button>

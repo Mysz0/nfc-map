@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
 
-export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLeaderboard) {
+export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLeaderboard, bonuses) {
   const [spots, setSpots] = useState({});
   const [unlockedSpots, setUnlockedSpots] = useState([]);
   const [spotStreaks, setSpotStreaks] = useState({});
   
-  const [activeXPBoost, setActiveXPBoost] = useState(1);
-  const [activeRadiusBoost, setActiveRadiusBoost] = useState(0); 
+  // Use the bonuses passed from useStore, or fall back to defaults
+  const activeXPBoost = bonuses?.xpMultiplier || 1;
+  const activeRadiusBoost = bonuses?.radiusBonus || 0;
 
   const getMultiplier = (days) => {
     if (days >= 10) return 1.5;
@@ -29,95 +30,67 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
     return R * c;
   };
 
-  const fetchActiveBonuses = useCallback(async () => {
-    if (!user?.id) return;
+  const fetchSpotData = useCallback(async () => {
+    if (!user) return;
     try {
-      const { data, error } = await supabase
-        .from('user_inventory')
-        .select('*, shop_items(*)')
-        .eq('user_id', user.id)
-        .eq('is_active', true);
+      const [spotsRes, allVotesRes, myVotesRes] = await Promise.all([
+        supabase.from('spots').select('*'),
+        supabase.from('spot_votes').select('spot_id, vote_type'),
+        supabase.from('spot_votes').select('spot_id, vote_type').eq('user_id', user.id)
+      ]);
 
-      if (error) throw error;
+      const globalCounts = (allVotesRes.data || []).reduce((acc, v) => {
+        if (!acc[v.spot_id]) acc[v.spot_id] = { up: 0, down: 0 };
+        acc[v.spot_id][v.vote_type]++;
+        return acc;
+      }, {});
 
-      let xpMult = 1;
-      let radBonus = 0;
+      const voteLookup = (myVotesRes.data || []).reduce((acc, v) => ({ 
+        ...acc, [v.spot_id]: v.vote_type 
+      }), {});
 
-      data?.forEach(item => {
-        if (!item.shop_items) return;
-        if (item.shop_items.icon_name === 'Zap') xpMult = Math.max(xpMult, item.shop_items.effect_value);
-        if (item.shop_items.icon_name === 'Maximize') radBonus += item.shop_items.effect_value;
-      });
+      const merged = (spotsRes.data || []).reduce((acc, s) => {
+        const c = globalCounts[s.id] || { up: 0, down: 0 };
+        acc[s.id] = { ...s, upvotes: c.up, downvotes: c.down, myvote: voteLookup[s.id] || null };
+        return acc;
+      }, {});
 
-      setActiveXPBoost(xpMult);
-      setActiveRadiusBoost(radBonus);
-    } catch (err) {
-      console.error("Bonus fetch error:", err);
-    }
-  }, [user?.id]);
+      setSpots(merged);
+
+      const { data: userClaimData } = await supabase.from('user_spots').select('*').eq('user_id', user.id);
+      if (userClaimData) {
+        const streakMap = {};
+        const unlockedList = [];
+        userClaimData.forEach((row) => {
+          unlockedList.push(String(row.spot_id));
+          streakMap[row.spot_id] = { streak: row.streak, last_claim: row.last_claim };
+        });
+        setUnlockedSpots(unlockedList);
+        setSpotStreaks(streakMap);
+      }
+    } catch (err) { console.error(err); }
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
 
-    const fetchSpotData = async () => {
-      try {
-        const [spotsRes, allVotesRes, myVotesRes] = await Promise.all([
-          supabase.from('spots').select('*'),
-          supabase.from('spot_votes').select('spot_id, vote_type'),
-          supabase.from('spot_votes').select('spot_id, vote_type').eq('user_id', user.id)
-        ]);
-
-        const globalCounts = (allVotesRes.data || []).reduce((acc, v) => {
-          if (!acc[v.spot_id]) acc[v.spot_id] = { up: 0, down: 0 };
-          acc[v.spot_id][v.vote_type]++;
-          return acc;
-        }, {});
-
-        const voteLookup = (myVotesRes.data || []).reduce((acc, v) => ({ 
-          ...acc, [v.spot_id]: v.vote_type 
-        }), {});
-
-        const merged = (spotsRes.data || []).reduce((acc, s) => {
-          const c = globalCounts[s.id] || { up: 0, down: 0 };
-          acc[s.id] = { ...s, upvotes: c.up, downvotes: c.down, myvote: voteLookup[s.id] || null };
-          return acc;
-        }, {});
-
-        setSpots(merged);
-
-        const { data: userClaimData } = await supabase.from('user_spots').select('*').eq('user_id', user.id);
-        if (userClaimData) {
-          const streakMap = {};
-          const unlockedList = [];
-          userClaimData.forEach((row) => {
-            unlockedList.push(String(row.spot_id));
-            streakMap[row.spot_id] = { streak: row.streak, last_claim: row.last_claim };
-          });
-          setUnlockedSpots(unlockedList);
-          setSpotStreaks(streakMap);
-        }
-        await fetchActiveBonuses();
-      } catch (err) { console.error(err); }
-    };
-
     fetchSpotData();
 
-    const invChannel = supabase.channel('inv_sync').on('postgres_changes', { event: '*', schema: 'public', table: 'user_inventory', filter: `user_id=eq.${user.id}` }, () => fetchActiveBonuses()).subscribe();
+    // Listen for spot changes globally
     const spotChannel = supabase.channel('spots_sync').on('postgres_changes', { event: '*', schema: 'public', table: 'spots' }, (payload) => {
-      if (payload.eventType === 'INSERT') fetchSpotData();
-      if (payload.eventType === 'UPDATE') fetchSpotData();
-      if (payload.eventType === 'DELETE') fetchSpotData();
+       fetchSpotData();
     }).subscribe();
 
     return () => {
-      supabase.removeChannel(invChannel);
       supabase.removeChannel(spotChannel);
     };
-  }, [user, fetchActiveBonuses]);
+  }, [user, fetchSpotData]);
 
   const claimSpot = async (input, baseRadius) => {
     if (!user) return;
     const todayStr = new Date().toDateString();
+    
+    // Dynamically update range based on radius boost
     const detectionRange = (baseRadius || 250) + activeRadiusBoost;
     let targets = [];
 
@@ -135,11 +108,11 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
 
     targets.forEach(spot => {
       const info = spotStreaks[spot.id] || { last_claim: null, streak: 0 };
-      
-      // If claimed today, we skip it
       if (info.last_claim && new Date(info.last_claim).toDateString() === todayStr) return;
 
       const nextStreak = (Number(info.streak) || 0) + 1;
+      
+      // APPLY XP BOOST MULTIPLIER
       const earned = Math.floor((spot.points || 100) * getMultiplier(nextStreak) * activeXPBoost);
       
       totalEarned += earned;
@@ -165,20 +138,14 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
 
   const removeSpot = async (id) => {
     try {
-      // 1. Delete from DB
       const { error } = await supabase.from('user_spots').delete().eq('user_id', user.id).eq('spot_id', id);
       if (error) throw error;
-
-      // 2. Clear Unlocked List
       setUnlockedSpots(prev => prev.filter(s => s !== String(id)));
-
-      // 3. IMPORTANT: Clear the streak/claim record from local state so it doesn't block re-claiming
       setSpotStreaks(prev => {
         const updated = { ...prev };
         delete updated[id];
         return updated;
       });
-
       showToast("Spot history cleared");
     } catch (err) { 
       console.error(err);

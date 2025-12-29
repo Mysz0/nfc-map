@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { supabase } from '../supabase';
 
 export function useStore(user, totalPoints, setTotalPoints, showToast) {
@@ -6,6 +6,26 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
   const isActivating = useRef(false);
+
+  // --- DYNAMIC BONUSES (Reactive to Inventory Changes) ---
+  const bonuses = useMemo(() => {
+    const hasXPBoost = inventory.some(
+      (inv) => inv.is_active && inv.shop_items?.icon_name === 'Zap'
+    );
+
+    const hasRadiusBoost = inventory.some(
+      (inv) => inv.is_active && inv.shop_items?.icon_name === 'Maximize'
+    );
+
+    return {
+      xpMultiplier: hasXPBoost ? 1.5 : 1.0,
+      radiusBonus: hasRadiusBoost ? 30 : 0,
+      isActive: {
+        xp: hasXPBoost,
+        radius: hasRadiusBoost
+      }
+    };
+  }, [inventory]);
 
   const getItemStatus = useCallback((item) => {
     if (!item.is_active || !item.activated_at || !item.shop_items?.duration_hours) {
@@ -132,20 +152,20 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
     try {
       const durationHours = item.shop_items?.duration_hours || 1;
       const boostDurationMs = durationHours * 60 * 60 * 1000;
-      const now = new Date().getTime();
       
-      let newActivationTime;
+      let finalActivationAt;
 
       if (item.is_active && item.activated_at) {
-        // EXTENSION LOGIC
+        // EXTENSION: Start from current expiry
         const currentStartTime = new Date(item.activated_at).getTime();
         const currentExpiry = currentStartTime + boostDurationMs;
-        const remainingTime = Math.max(0, currentExpiry - now);
-
-        // We push the "start time" forward by the remaining time
-        newActivationTime = new Date(now + remainingTime);
+        const newExpiry = currentExpiry + boostDurationMs;
+        
+        // Normalize back to a "start time" relative to the new expiry
+        finalActivationAt = new Date(newExpiry - boostDurationMs).toISOString();
       } else {
-        newActivationTime = new Date();
+        // FRESH START
+        finalActivationAt = new Date().toISOString();
       }
 
       const { error } = await supabase
@@ -153,11 +173,12 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
         .update({
           quantity: item.quantity - 1,
           is_active: true,
-          activated_at: newActivationTime.toISOString()
+          activated_at: finalActivationAt
         })
         .eq('id', inventoryId);
 
       if (error) throw error;
+      
       showToast(`${item.shop_items.name} ${item.is_active ? 'extended' : 'activated'}!`, "success");
       await fetchData();
     } catch (err) {
@@ -171,5 +192,5 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  return { shopItems, inventory, buyItem, activateItem, loading };
+  return { shopItems, inventory, buyItem, activateItem, loading, bonuses };
 }
