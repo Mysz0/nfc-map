@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Leaf, Snowflake, Waves, Flower, Shell, Fish, Lock, Sparkles } from 'lucide-react';
+import { Calendar, Leaf, Snowflake, Waves, Flower, Shell, Fish, Layers, Lock, Sparkles } from 'lucide-react';
 
 export default function ProfileTab({ 
   tempUsername = "", 
@@ -145,6 +145,15 @@ export default function ProfileTab({
             <span className="text-[10px] font-bold uppercase">Abyss</span>
           </button>
 
+          <button 
+            onClick={() => setAppStyle('marble')}
+            className={`flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
+              appStyle === 'marble' ? 'bg-[#18181b] text-white shadow-lg' : 'opacity-40 hover:opacity-100'
+            }`}
+          >
+            <Layers size={14} />
+            <span className="text-[10px] font-bold uppercase">Marble</span>
+          </button>
           {/* NEW LOCKED THEME: SUPERNOVA */}
           <button 
             onClick={() => {
