@@ -84,6 +84,48 @@ export function useTheme() {
           bottom.style.backgroundColor = bgColor;
           bottom.style.height = 'env(safe-area-inset-bottom, 0)';
         }
+
+        // DEBUG: Log env() computed values and heights to help diagnose iOS behavior
+        // eslint-disable-next-line no-console
+        console.debug('[useTheme] safe-area env values:', {
+          envTop: getComputedStyle(document.documentElement).getPropertyValue('padding-top'),
+          envBottom: getComputedStyle(document.documentElement).getPropertyValue('padding-bottom'),
+          safeTop: top ? top.offsetHeight : null,
+          safeBottom: bottom ? bottom.offsetHeight : null
+        });
+
+        // On-screen debug overlay for devices without remote inspector (enable with ?debugTheme=1 or localStorage.debugTheme='1')
+        try {
+          const shouldShow = new URLSearchParams(window.location.search).has('debugTheme') || localStorage.getItem('debugTheme') === '1';
+          if (shouldShow) {
+            let dbg = document.getElementById('theme-debug-overlay');
+            if (!dbg) {
+              dbg = document.createElement('div');
+              dbg.id = 'theme-debug-overlay';
+              Object.assign(dbg.style, {
+                position: 'fixed',
+                left: '8px',
+                top: 'calc(env(safe-area-inset-top, 0) + 8px)',
+                background: 'rgba(0,0,0,0.6)',
+                color: 'white',
+                padding: '8px',
+                fontSize: '12px',
+                zIndex: '10001',
+                borderRadius: '8px',
+                maxWidth: 'calc(100vw - 16px)',
+                pointerEvents: 'none',
+                whiteSpace: 'pre',
+                lineHeight: '1.1'
+              });
+              document.body.appendChild(dbg);
+            }
+
+            const meta = document.querySelector('meta[name="theme-color"]');
+            dbg.textContent = `style: ${appStyle}\nmode: ${mode}\ndark: ${isDark}\nrootBg: ${rootBg}\nbodyBg: ${bodyBg}\nmeta: ${meta ? meta.getAttribute('content') : ''}\nsafeTop: ${top ? top.offsetHeight : 0}\nsafeBottom: ${bottom ? bottom.offsetHeight : 0}`;
+          }
+        } catch (e) {
+          // ignore in older browsers
+        }
       }
     });
 
