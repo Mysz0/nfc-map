@@ -22,6 +22,12 @@ export function useTheme() {
     document.body.style.removeProperty('--theme-map-bg');
 
     requestAnimationFrame(() => {
+      // CLEANUP: Remove any stale safe-area filler elements from previous code versions
+      const oldTop = document.getElementById('safe-area-top');
+      const oldBottom = document.getElementById('safe-area-bottom');
+      if (oldTop) oldTop.remove();
+      if (oldBottom) oldBottom.remove();
+
       // read from both root and body to be robust across inheritance and specificity
       const rootBg = getComputedStyle(root).getPropertyValue('--theme-map-bg').trim();
       const bodyBg = getComputedStyle(document.body).getPropertyValue('--theme-map-bg').trim();
