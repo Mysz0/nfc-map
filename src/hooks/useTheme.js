@@ -6,10 +6,10 @@ const THEME_COLORS = {
   koi: { light: '#fffcfb', dark: '#0c0a09' },
   sakura: { light: '#fdf2f8', dark: '#0f0609' },
   winter: { light: '#f8fafc', dark: '#020617' },
-  abyss: { light: '#f0f9ff', dark: '#0f2847' },
-  supernova: { light: '#faf5ff', dark: '#1a0f2e' },
-  salmon: { light: '#fff5f3', dark: '#0c0705' },
-  marble: { light: '#fafafa', dark: '#0a0a0a' }
+  abyss: { light: '#f0f9ff', dark: '#020617' },
+  supernova: { light: '#faf5ff', dark: '#080510' },
+  salmon: { light: '#fffbf8', dark: '#0c0504' },
+  marble: { light: '#ffffff', dark: '#000000' }
 };
 
 export function useTheme() {
@@ -86,6 +86,32 @@ export function useTheme() {
         document.body.offsetHeight;
       }
     });
+
+    // Second update with setTimeout for dynamically switched themes
+    // Safari needs extra time to compute CSS variables after data-theme attribute changes
+    setTimeout(() => {
+      if (themeUpdateIdRef.current !== updateId) return;
+
+      const rootBg = getComputedStyle(root).getPropertyValue('--theme-map-bg').trim();
+      const bodyBg = getComputedStyle(document.body).getPropertyValue('--theme-map-bg').trim();
+      const bgColor = rootBg || bodyBg;
+
+      if (bgColor) {
+        document.documentElement.style.backgroundColor = bgColor;
+        document.body.style.backgroundColor = bgColor;
+
+        const head = document.head;
+        if (head) {
+          head.querySelectorAll('meta[name="theme-color"]').forEach((el) => el.remove());
+          const meta = document.createElement('meta');
+          meta.setAttribute('name', 'theme-color');
+          meta.setAttribute('content', bgColor);
+          head.appendChild(meta);
+        }
+
+        document.body.offsetHeight;
+      }
+    }, 50);
 
     localStorage.setItem('theme-mode', mode);
     localStorage.setItem('app-style', appStyle);
