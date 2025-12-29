@@ -32,100 +32,18 @@ export function useTheme() {
       console.debug(`[useTheme] appStyle=${appStyle} isDark=${isDark} rootBg='${rootBg}' bodyBg='${bodyBg}' => using='${bgColor}'`);
 
       if (bgColor) {
-        // set page background colors (helps transition visuals)
+        // set page background colors (the translucent iOS status bar will show this through)
         document.documentElement.style.backgroundColor = bgColor;
         document.body.style.backgroundColor = bgColor;
 
-        // update Android/Chrome theme-color meta
+        // update Android/Chrome theme-color meta (also affects iOS in some contexts)
         const meta = document.querySelector('meta[name="theme-color"]');
         if (meta) {
           meta.setAttribute('content', bgColor);
         }
 
-        // Create or update explicit safe-area filler elements for iOS
-        // Using real DOM elements is more reliable than pseudo-elements in some Safari contexts
-        let top = document.getElementById('safe-area-top');
-        let bottom = document.getElementById('safe-area-bottom');
-
-        if (!top) {
-          top = document.createElement('div');
-          top.id = 'safe-area-top';
-          document.body.insertBefore(top, document.body.firstChild);
-        }
-
-        if (!bottom) {
-          bottom = document.createElement('div');
-          bottom.id = 'safe-area-bottom';
-          document.body.insertBefore(bottom, document.body.firstChild);
-        }
-
-        // Always update styles (position, color, height) on every theme change
-        Object.assign(top.style, {
-          position: 'fixed',
-          left: '0',
-          right: '0',
-          top: '0',
-          height: 'env(safe-area-inset-top, 0)',
-          backgroundColor: bgColor,
-          pointerEvents: 'none',
-          zIndex: '9999',
-        });
-
-        Object.assign(bottom.style, {
-          position: 'fixed',
-          left: '0',
-          right: '0',
-          bottom: '0',
-          height: 'env(safe-area-inset-bottom, 0)',
-          backgroundColor: bgColor,
-          pointerEvents: 'none',
-          zIndex: '9999',
-        });
-
-        // PLATFORM/WORKAROUND: Some iOS contexts return 0 for env() until a layout tick
-        const isiOS = /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-        const applyFallbackIfNeeded = () => {
-          const safeTopPx = top ? top.offsetHeight : 0;
-          const safeBottomPx = bottom ? bottom.offsetHeight : 0;
-
-          // If env() gives 0 on iOS, use a small fallback so the status/homebars will be colored
-          if (isiOS) {
-            if (safeTopPx === 0) {
-              top.style.height = '20px';
-              top.dataset.fallback = '1';
-            } else {
-              delete top.dataset.fallback;
-            }
-
-            if (safeBottomPx === 0) {
-              bottom.style.height = '20px';
-              bottom.dataset.fallback = '1';
-            } else {
-              delete bottom.dataset.fallback;
-            }
-          }
-
-          // Always ensure backgroundColor is current (force repaint)
-          top.style.backgroundColor = bgColor;
-          bottom.style.backgroundColor = bgColor;
-
-          // DEBUG: Log env() computed values and heights to help diagnose iOS behavior
-          // eslint-disable-next-line no-console
-          console.debug('[useTheme] safe-area env values:', {
-            isiOS,
-            bgColor,
-            safeTop: top ? top.offsetHeight : null,
-            safeBottom: bottom ? bottom.offsetHeight : null,
-            topFallback: top ? !!top.dataset.fallback : false,
-            bottomFallback: bottom ? !!bottom.dataset.fallback : false
-          });
-        };
-
-        // Run immediate check, then re-check after short delays to catch layout timing issues
-        applyFallbackIfNeeded();
-        setTimeout(() => applyFallbackIfNeeded(), 120);
-        setTimeout(() => applyFallbackIfNeeded(), 400);
+        // Force a repaint to ensure the color updates immediately
+        void document.body.offsetHeight;
 
         // On-screen debug overlay for devices without remote inspector (enable with ?debugTheme=1 or localStorage.debugTheme='1')
         try {
@@ -138,23 +56,22 @@ export function useTheme() {
               Object.assign(dbg.style, {
                 position: 'fixed',
                 left: '8px',
-                top: 'calc(env(safe-area-inset-top, 0) + 8px)',
-                background: 'rgba(0,0,0,0.6)',
+                top: '8px',
+                background: 'rgba(0,0,0,0.8)',
                 color: 'white',
                 padding: '8px',
-                fontSize: '12px',
+                fontSize: '11px',
                 zIndex: '10001',
                 borderRadius: '8px',
                 maxWidth: 'calc(100vw - 16px)',
                 pointerEvents: 'none',
                 whiteSpace: 'pre',
-                lineHeight: '1.1'
+                lineHeight: '1.3'
               });
               document.body.appendChild(dbg);
             }
 
-            const meta = document.querySelector('meta[name="theme-color"]');
-            dbg.textContent = `style: ${appStyle}\nmode: ${mode}\ndark: ${isDark}\nrootBg: ${rootBg}\nbodyBg: ${bodyBg}\nmeta: ${meta ? meta.getAttribute('content') : ''}\nsafeTop: ${top ? top.offsetHeight : 0} (fallback=${top && top.dataset.fallback ? 'yes' : 'no'})\nsafeBottom: ${bottom ? bottom.offsetHeight : 0} (fallback=${bottom && bottom.dataset.fallback ? 'yes' : 'no'})\nisiOS: ${isiOS}`;
+            dbg.textContent = `style: ${appStyle}\nmode: ${mode}\ndark: ${isDark}\nrootBg: ${rootBg}\nbodyBg: ${bodyBg}\nmeta: ${meta ? meta.getAttribute('content') : ''}\ndocBg: ${document.documentElement.style.backgroundColor}\nbodyBg: ${document.body.style.backgroundColor}`;
           }
         } catch (e) {
           // ignore in older browsers
