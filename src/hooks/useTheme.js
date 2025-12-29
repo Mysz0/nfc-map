@@ -32,12 +32,57 @@ export function useTheme() {
       console.debug(`[useTheme] appStyle=${appStyle} isDark=${isDark} rootBg='${rootBg}' bodyBg='${bodyBg}' => using='${bgColor}'`);
 
       if (bgColor) {
+        // set page background colors (helps transition visuals)
         document.documentElement.style.backgroundColor = bgColor;
         document.body.style.backgroundColor = bgColor;
 
+        // update Android/Chrome theme-color meta
         const meta = document.querySelector('meta[name="theme-color"]');
         if (meta) {
           meta.setAttribute('content', bgColor);
+        }
+
+        // Create or update explicit safe-area filler elements for iOS
+        // Using real DOM elements is more reliable than pseudo-elements in some Safari contexts
+        let top = document.getElementById('safe-area-top');
+        let bottom = document.getElementById('safe-area-bottom');
+
+        if (!top) {
+          top = document.createElement('div');
+          top.id = 'safe-area-top';
+          Object.assign(top.style, {
+            position: 'fixed',
+            left: '0',
+            right: '0',
+            top: '0',
+            height: 'env(safe-area-inset-top, 0)',
+            backgroundColor: bgColor,
+            pointerEvents: 'none',
+            zIndex: '9999',
+          });
+          document.body.appendChild(top);
+        } else {
+          top.style.backgroundColor = bgColor;
+          top.style.height = 'env(safe-area-inset-top, 0)';
+        }
+
+        if (!bottom) {
+          bottom = document.createElement('div');
+          bottom.id = 'safe-area-bottom';
+          Object.assign(bottom.style, {
+            position: 'fixed',
+            left: '0',
+            right: '0',
+            bottom: '0',
+            height: 'env(safe-area-inset-bottom, 0)',
+            backgroundColor: bgColor,
+            pointerEvents: 'none',
+            zIndex: '9999',
+          });
+          document.body.appendChild(bottom);
+        } else {
+          bottom.style.backgroundColor = bgColor;
+          bottom.style.height = 'env(safe-area-inset-bottom, 0)';
         }
       }
     });
