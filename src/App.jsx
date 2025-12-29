@@ -43,17 +43,6 @@ export default function App() {
     isNavbarShrunk
   } = useTheme();
 
-  // --- NEW THEME ENGINE SYNC ---
-  useEffect(() => {
-    const root = window.document.documentElement;
-    root.setAttribute('data-theme', appStyle);
-    if (isDark) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-  }, [appStyle, isDark]);
-
   const showToast = (text, type = 'success') => {
     setStatusMsg({ text, type });
     setTimeout(() => setStatusMsg({ text: '', type: '' }), 4000);
