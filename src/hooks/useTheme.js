@@ -1,5 +1,17 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 
+// Hardcoded fallback colors for immediate meta tag setting on page load
+const THEME_COLORS = {
+  emerald: { light: '#f0fdf4', dark: '#0a0a0a' },
+  koi: { light: '#fffcfb', dark: '#0c0a09' },
+  sakura: { light: '#fdf2f8', dark: '#0f0609' },
+  winter: { light: '#f8fafc', dark: '#020617' },
+  abyss: { light: '#f0f9ff', dark: '#0f2847' },
+  supernova: { light: '#faf5ff', dark: '#1a0f2e' },
+  salmon: { light: '#fff5f3', dark: '#0c0705' },
+  marble: { light: '#fafafa', dark: '#0a0a0a' }
+};
+
 export function useTheme() {
   const [mode, setMode] = useState(localStorage.getItem('theme-mode') || 'dark');
   const [appStyle, setAppStyle] = useState(localStorage.getItem('app-style') || 'emerald');
@@ -21,6 +33,18 @@ export function useTheme() {
     root.setAttribute('data-theme', appStyle);
     root.classList.toggle('dark', isDark);
     root.style.colorScheme = mode;
+
+    // Set fallback meta tag immediately using hardcoded colors
+    // This ensures iOS Safari's address bar matches the theme even on page reload
+    const fallbackColor = THEME_COLORS[appStyle]?.[isDark ? 'dark' : 'light'] || '#0a0a0a';
+    const head = document.head;
+    if (head) {
+      head.querySelectorAll('meta[name="theme-color"]').forEach((el) => el.remove());
+      const meta = document.createElement('meta');
+      meta.setAttribute('name', 'theme-color');
+      meta.setAttribute('content', fallbackColor);
+      head.appendChild(meta);
+    }
 
     // remove any previously set inline var if present (fixes stale inline value)
     root.style.removeProperty('--theme-map-bg');
@@ -47,7 +71,7 @@ export function useTheme() {
         document.body.style.backgroundColor = bgColor;
 
         // iOS Safari can be picky about updating the browser UI color dynamically.
-        // Replacing the meta tag (instead of only mutating content) is more reliable.
+        // Update meta tag with the computed color from CSS
         const head = document.head;
         if (head) {
           head.querySelectorAll('meta[name="theme-color"]').forEach((el) => el.remove());
