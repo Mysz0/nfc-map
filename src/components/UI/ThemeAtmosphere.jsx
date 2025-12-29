@@ -7,16 +7,18 @@ const WinterEffect = () => (
   <>
     {/* Base frost vignette */}
     <div 
-      className="fixed inset-0 pointer-events-none z-0" 
+      className="fixed inset-0 pointer-events-none" 
       style={{ 
+        zIndex: -9999,
         background: 'radial-gradient(circle at 50% 50%, transparent 40%, rgba(186, 230, 253, 0.15) 100%)'
       }} 
     />
     
     {/* Animated frost layer */}
     <div 
-      className="fixed inset-0 pointer-events-none z-0"
+      className="fixed inset-0 pointer-events-none"
       style={{ 
+        zIndex: -9999,
         background: 'linear-gradient(135deg, rgba(186, 230, 253, 0.08) 0%, transparent 100%)',
         animation: 'iceBreath 10s ease-in-out infinite' 
       }} 
@@ -24,8 +26,9 @@ const WinterEffect = () => (
     
     {/* Ice crystal sparkles */}
     <div 
-      className="fixed inset-0 pointer-events-none z-0 opacity-20"
+      className="fixed inset-0 pointer-events-none opacity-20"
       style={{
+        zIndex: -9999,
         backgroundImage: `
           radial-gradient(circle at 20% 30%, rgba(186, 230, 253, 0.4) 1px, transparent 1px),
           radial-gradient(circle at 60% 70%, rgba(186, 230, 253, 0.3) 1px, transparent 1px),
@@ -55,8 +58,8 @@ const SakuraEffect = () => {
 
   return (
     <div 
-      className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
-      style={{ }}
+      className="fixed inset-0 pointer-events-none overflow-hidden"
+      style={{ zIndex: -9999 }}
     >
       {/* Soft pink gradient backdrop */}
       <div 
@@ -112,8 +115,8 @@ const KoiEffect = () => {
 
   return (
     <div 
-      className="fixed inset-0 pointer-events-none z-0"
-      style={{ }}
+      className="fixed inset-0 pointer-events-none"
+      style={{ zIndex: -9999 }}
     >
       <div 
         className="absolute inset-0 opacity-15" 
@@ -219,8 +222,8 @@ const SupernovaEffect = () => {
 
   return (
     <div 
-      className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
-      style={{ }}
+      className="fixed inset-0 pointer-events-none overflow-hidden"
+      style={{ zIndex: -9999 }}
     >
       {/* Energy field base */}
       <div 
@@ -274,8 +277,8 @@ const SupernovaEffect = () => {
    ============================================== */
 const SalmonEffect = () => (
   <div 
-    className="fixed inset-0 pointer-events-none z-0"
-    style={{ }}
+    className="fixed inset-0 pointer-events-none"
+    style={{ zIndex: -9999 }}
   >
     {/* Warm gradient waves */}
     <div 
@@ -304,8 +307,8 @@ const SalmonEffect = () => (
    ============================================== */
 const MarbleEffect = () => (
   <div 
-    className="fixed inset-0 pointer-events-none z-0"
-    style={{ }}
+    className="fixed inset-0 pointer-events-none"
+    style={{ zIndex: -9999 }}
   >
     {/* Subtle vignette */}
     <div 
@@ -321,10 +324,17 @@ const MarbleEffect = () => (
    MAIN COMPONENT
    ============================================== */
 function ThemeAtmosphere({ activeStyle }) {
-  // Disabled all theme overlays due to iOS safe area rendering issues.
-  // The backgroundColor set by useTheme.js in document.documentElement and document.body
-  // is sufficient for all themes. Having overlays breaks safe area handling on iOS Safari.
-  return null;
+  const effects = {
+    winter: <WinterEffect />,
+    sakura: <SakuraEffect />,
+    koi: <KoiEffect />,
+    abyss: <AbyssEffect />,
+    supernova: <SupernovaEffect />,
+    salmon: <SalmonEffect />,
+    marble: <MarbleEffect />
+  };
+
+  return effects[activeStyle] || null;
 }
 
 export default React.memo(ThemeAtmosphere);
