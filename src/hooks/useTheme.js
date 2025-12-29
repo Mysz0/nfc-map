@@ -21,10 +21,6 @@ export function useTheme() {
       const bgColor = getComputedStyle(root).getPropertyValue('--theme-map-bg').trim();
       
       if (bgColor) {
-        // ensure CSS var is set inline so pseudo-elements and safe-area use the new color immediately
-        root.style.setProperty('--theme-map-bg', bgColor);
-        document.body.style.setProperty('--theme-map-bg', bgColor);
-
         root.style.backgroundColor = bgColor;
         document.body.style.backgroundColor = bgColor;
 
@@ -34,6 +30,10 @@ export function useTheme() {
         }
       }
     });
+
+    // remove any previously set inline var if present (fixes stale inline value)
+    root.style.removeProperty('--theme-map-bg');
+    document.body.style.removeProperty('--theme-map-bg');
 
     localStorage.setItem('theme-mode', mode);
     localStorage.setItem('app-style', appStyle);
