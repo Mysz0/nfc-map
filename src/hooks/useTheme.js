@@ -120,7 +120,14 @@ export function useTheme() {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      setIsAtTop(currentScrollY < 120);
+      const buffer = 10; // Add a buffer zone to prevent jittery behavior
+
+      if (currentScrollY < 120 - buffer) {
+        setIsAtTop(true);
+      } else if (currentScrollY > 120 + buffer) {
+        setIsAtTop(false);
+      }
+
       if (currentScrollY > lastScrollY && currentScrollY > 100) {
         setIsNavbarShrunk(true);
       } else if (lastScrollY - currentScrollY > 15 || currentScrollY < 10) {
@@ -128,8 +135,11 @@ export function useTheme() {
       }
       setLastScrollY(currentScrollY);
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    const debouncedHandleScroll = debounce(handleScroll, 50); // Debounce the scroll handler
+
+    window.addEventListener('scroll', debouncedHandleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', debouncedHandleScroll);
   }, [lastScrollY]);
 
   return { mode, setMode, appStyle, setAppStyle, isDark, isAtTop, isNavbarShrunk };
