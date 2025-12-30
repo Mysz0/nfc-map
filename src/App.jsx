@@ -154,11 +154,6 @@ export default function App() {
       return newSequence;
     });
   }, [unlockedThemes, buyTheme, fetchProfile]);
-      }
-      
-      return newSequence;
-    });
-  }, [unlockedThemes, buyTheme, fetchProfile]);
 
   const { userLocation, mapCenter, isNearSpot, canClaim, activeSpotId, radiusBonus } = useGeoLocation(
     user,
@@ -258,7 +253,7 @@ export default function App() {
         onUsernameTap={handleUsernameTap}
       />
 
-      <main className={`max-w-md mx-auto px-6 -mt-16 relative z-30 ${activeTab === 'profile' ? 'overflow-visible' : 'overflow-hidden'}`}>
+      <main className={`max-w-md mx-auto px-6 -mt-16 relative z-30 ${['profile', 'home'].includes(activeTab) ? 'overflow-visible' : 'overflow-hidden'}`}>
         {/* 🚀 Atmosphere overlays constrained to the content shell to avoid safe-area edges */}
         <ThemeAtmosphere activeStyle={appStyle} />
 
