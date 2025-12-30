@@ -36,6 +36,7 @@ export default function StoreTab({ totalPoints, shopItems = [], inventory = [], 
     { id: 'sakura', name: 'Sakura', price: 100, icon: Flower, color: '#F4ACB7' },
     { id: 'salmon', name: 'Salmon', price: 150, icon: Fish, color: '#FF8C73' },
     { id: 'abyss', name: 'Abyss', price: 200, icon: Shell, color: '#FB923C' },
+    { id: 'aurora', name: 'Aurora', price: 300, icon: Sparkles, color: '#a78bfa' },
     { id: 'marble', name: 'Marble', price: 250, icon: Layers, color: '#A1A1AA' },
   ];
 

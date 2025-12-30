@@ -29,6 +29,7 @@ export default function ProfileTab({
     { id: 'sakura', label: 'Sakura', icon: Flower, color: 'bg-[#F4ACB7]' },
     { id: 'salmon', label: 'Salmon', icon: Fish, color: 'bg-[#FF8C73]' },
     { id: 'abyss', label: 'Abyss', icon: Shell, color: 'bg-[#FB923C]' },
+    { id: 'aurora', label: 'Aurora', icon: Sparkles, color: 'bg-[#a78bfa]' },
     { id: 'marble', label: 'Marble', icon: Layers, color: 'bg-[#18181b]' },
     { id: 'blackhole', label: 'Blackhole', icon: Sparkles, color: 'bg-[#7C3AED]' },
   ];
