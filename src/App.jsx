@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import 'leaflet/dist/leaflet.css';
 
 // MODULAR IMPORTS
@@ -27,8 +27,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [statusMsg, setStatusMsg] = useState({ text: '', type: '' });
   const [konamiCode, setKonamiCode] = useState([]);
-  const [tapCount, setTapCount] = useState(0);
-  const tapTimerRef = useRef(null);
+  const [unlockedSequence, setUnlockedSequence] = useState({ usernameTaps: 0, scanTaps: 0 });
   const KONAMI_CODE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
   
   // 2. LOGIC EXTRACTION (Hooks)
@@ -101,16 +100,6 @@ export default function App() {
     });
   }, [KONAMI_CODE, unlockedThemes, buyTheme, fetchProfile]);
 
-  // Triple-tap detection for mobile - unlock blackhole by triple-tapping screen
-  const handleTripleTap = useCallback(() => {
-    showToast('Black hole unlocked', 'success');
-    
-    // Automatically buy/unlock blackhole theme (price 0 = free secret unlock)
-    if (unlockedThemes && !unlockedThemes.includes('blackhole')) {
-      buyTheme('blackhole', 0, fetchProfile);
-    }
-  }, [unlockedThemes, buyTheme, fetchProfile]);
-
   // Username tap handler
   const handleUsernameTap = useCallback(() => {
     setUnlockedSequence(prev => {
@@ -178,44 +167,6 @@ export default function App() {
     window.addEventListener('keydown', handleKonamiCode);
     return () => window.removeEventListener('keydown', handleKonamiCode);
   }, [handleKonamiCode]);
-
-  // Attach triple-tap detector for mobile
-  useEffect(() => {
-    const handleTouchStart = () => {
-      setTapCount(prev => {
-        const newCount = prev + 1;
-
-        // Clear previous timer
-        if (tapTimerRef.current) {
-          clearTimeout(tapTimerRef.current);
-        }
-
-        // Reset counter after 500ms of no taps
-        tapTimerRef.current = setTimeout(() => {
-          setTapCount(0);
-        }, 500);
-
-        // Trigger on triple tap
-        if (newCount === 3) {
-          setTapCount(0);
-          if (tapTimerRef.current) {
-            clearTimeout(tapTimerRef.current);
-          }
-          handleTripleTap();
-        }
-
-        return newCount;
-      });
-    };
-
-    window.addEventListener('touchstart', handleTouchStart, false);
-    return () => {
-      window.removeEventListener('touchstart', handleTouchStart);
-      if (tapTimerRef.current) {
-        clearTimeout(tapTimerRef.current);
-      }
-    };
-  }, [handleTripleTap]);
 
   // UPDATED: Loading screen now uses theme variables
   if (loading) return (
