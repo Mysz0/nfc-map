@@ -1,21 +1,25 @@
 import React, { useMemo } from 'react';
 
-// Safe viewport wrapper that honors iOS safe areas and prevents overflow scrollbars
+// Safe viewport wrapper that sits inside the app shell (not the viewport) to avoid triggering iOS safe-area bars.
+// Uses a small inset + safe-area padding and absolute positioning so it never touches screen edges.
 const AtmosphereFrame = ({ children }) => (
   <div
     className="pointer-events-none"
     style={{
-      position: 'fixed',
-      top: 'env(safe-area-inset-top, 0px)',
-      right: 'env(safe-area-inset-right, 0px)',
-      bottom: 'env(safe-area-inset-bottom, 0px)',
-      left: 'env(safe-area-inset-left, 0px)',
+      position: 'absolute',
+      inset: 0,
+      paddingTop: 'calc(env(safe-area-inset-top, 0px) + 10px)',
+      paddingRight: 'calc(env(safe-area-inset-right, 0px) + 10px)',
+      paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 10px)',
+      paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 10px)',
       overflow: 'hidden',
       zIndex: 0,
-      maxWidth: '100vw',
-      maxHeight: '100dvh',
+      maxWidth: '100%',
+      maxHeight: '100%',
       contain: 'layout paint size',
       transform: 'translateZ(0)',
+      borderRadius: '16px',
+      WebkitOverflowScrolling: 'touch',
     }}
   >
     <div className="absolute inset-0" style={{ pointerEvents: 'none' }}>

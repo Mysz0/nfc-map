@@ -104,9 +104,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen relative pb-36 transition-all duration-700 ease-in-out bg-[var(--theme-map-bg)] text-[var(--theme-text-title)]">
-      
-      {/* 🚀 COMPLEX UI OVERLAYS (Winter frost, Sakura petals, etc.) */}
-      <ThemeAtmosphere activeStyle={appStyle} />
 
       <Toast statusMsg={statusMsg} />
 
@@ -127,7 +124,10 @@ export default function App() {
         handleLogout={handleLogout} 
       />
 
-      <main className="max-w-md mx-auto px-6 -mt-16 relative z-30">
+      <main className="max-w-md mx-auto px-6 -mt-16 relative z-30 overflow-hidden">
+        {/* 🚀 Atmosphere overlays constrained to the content shell to avoid safe-area edges */}
+        <ThemeAtmosphere activeStyle={appStyle} />
+
         {activeTab === 'home' && (
           <HomeTab 
             isNearSpot={isNearSpot} 
