@@ -124,7 +124,7 @@ export default function App() {
         handleLogout={handleLogout} 
       />
 
-      <main className="max-w-md mx-auto px-6 -mt-16 relative z-30 overflow-hidden">
+      <main className={`max-w-md mx-auto px-6 -mt-16 relative z-30 ${activeTab === 'profile' ? 'overflow-visible' : 'overflow-hidden'}`}>
         {/* 🚀 Atmosphere overlays constrained to the content shell to avoid safe-area edges */}
         <ThemeAtmosphere activeStyle={appStyle} />
 
