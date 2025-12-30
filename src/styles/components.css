@@ -67,15 +67,13 @@
   position: absolute;
   inset: 0;
   background: var(--ice-shimmer);
-  background-size: 200% 100%;
+  background-size: 100% 100%;
   opacity: 0;
-  transition: opacity 0.6s ease;
   pointer-events: none;
 }
 
 [data-theme='winter'] .node-card-static:hover::before {
-  animation: shimmerMove 2s ease-in-out;
-  opacity: 1;
+  opacity: 0;
 }
 
 [data-theme='winter'] .node-card-static::after {
@@ -255,16 +253,18 @@
 [data-theme='blackhole'] .node-card-static::before {
   content: '';
   position: absolute;
-  inset: -3px;
-  background: conic-gradient(from 0deg at 50% 50%, 
+  inset: -2px;
+  background: linear-gradient(135deg, 
     transparent, 
-    rgba(139, 92, 246, 0.3), 
+    rgba(139, 92, 246, 0.4), 
+    transparent,
+    rgba(139, 92, 246, 0.2),
     transparent);
   border-radius: inherit;
   opacity: 0;
   transition: opacity 0.5s ease;
   pointer-events: none;
-  animation: spin 4s linear infinite;
+  animation: gravityPulse 3s ease-in-out infinite;
 }
 
 [data-theme='blackhole'] .node-card-static:hover::before {
@@ -399,6 +399,17 @@
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+@keyframes gravityPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
 }
 
 @keyframes rippleOut {

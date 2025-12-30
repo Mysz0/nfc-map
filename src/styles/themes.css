@@ -210,6 +210,12 @@
   /* Winter: Crisp icy shimmer and bright contrast */
   --theme-card-glow: 0 0 25px rgba(186, 230, 253, 0.3);
   --theme-filter: brightness(1.05) contrast(1.05);
+  
+  /* Ice crack pattern */
+  --ice-shimmer: 
+    linear-gradient(115deg, transparent 0%, transparent 35%, rgba(186, 230, 253, 0.15) 35.5%, rgba(186, 230, 253, 0.2) 36%, transparent 36.5%, transparent 100%),
+    linear-gradient(155deg, transparent 0%, transparent 62%, rgba(186, 230, 253, 0.12) 62.5%, rgba(186, 230, 253, 0.18) 63%, transparent 63.5%, transparent 100%);
+  --frost-pattern: repeating-linear-gradient(120deg, transparent, transparent 2px, rgba(186, 230, 253, 0.1) 2px, rgba(186, 230, 253, 0.1) 3px);
 }
 
 .dark[data-theme='winter'] {
