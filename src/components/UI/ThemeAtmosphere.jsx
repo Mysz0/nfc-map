@@ -33,25 +33,7 @@ const AtmosphereFrame = ({ children }) => (
    ============================================== */
 const WinterEffect = () => (
   <>
-    {/* Base frost vignette */}
-    <div 
-      className="absolute inset-0" 
-      style={{ 
-        zIndex: 0,
-        background: 'radial-gradient(circle at 50% 50%, transparent 40%, rgba(186, 230, 253, 0.15) 100%)'
-      }} 
-    />
-    
-    {/* Animated frost layer - removed sway animation */}
-    <div 
-      className="absolute inset-0"
-      style={{ 
-        zIndex: 0,
-        background: 'linear-gradient(135deg, rgba(186, 230, 253, 0.08) 0%, transparent 100%)'
-      }} 
-    />
-    
-    {/* Ice crystal sparkles */}
+    {/* Ice crystal sparkles (no background tint) */}
     <div 
       className="absolute inset-0 opacity-20"
       style={{
@@ -85,15 +67,7 @@ const SakuraEffect = () => {
 
   return (
     <>
-      {/* Soft pink gradient backdrop */}
-      <div 
-        className="absolute inset-0 opacity-30"
-        style={{
-          background: 'radial-gradient(circle at 70% 20%, rgba(244, 114, 182, 0.12), transparent 60%)'
-        }}
-      />
-      
-      {/* Falling petals */}
+      {/* Falling petals (no background tint) */}
       <div className="absolute inset-0 overflow-hidden">
         {petals.map((p) => (
           <div 
@@ -111,14 +85,6 @@ const SakuraEffect = () => {
           />
         ))}
       </div>
-      
-      {/* Ambient glow */}
-      <div 
-        className="absolute inset-0 opacity-10"
-        style={{
-          background: 'radial-gradient(circle at 80% 80%, rgba(244, 114, 182, 0.3), transparent 70%)'
-        }}
-      />
     </>
   );
 };
@@ -139,14 +105,6 @@ const KoiEffect = () => {
 
   return (
     <>
-      <div 
-        className="absolute inset-0 opacity-15" 
-        style={{ 
-          background: 'var(--water-texture)',
-          backgroundSize: '500px 500px'
-        }} 
-      />
-      
       {ripples.map((ripple) => (
         <div 
           key={ripple.id}
@@ -184,25 +142,6 @@ const AbyssEffect = () => {
 
   return (
     <>
-      {/* Deep gradient from bottom */}
-      <div 
-        className="absolute inset-0"
-        style={{
-          background: 'linear-gradient(to top, rgba(3, 21, 37, 0.4) 0%, transparent 60%)'
-        }}
-      />
-      
-      {/* Pressure zones */}
-      <div 
-        className="absolute inset-0 opacity-20"
-        style={{
-          background: `
-            radial-gradient(ellipse at 50% 100%, rgba(14, 165, 233, 0.15), transparent 50%),
-            radial-gradient(ellipse at 30% 60%, rgba(14, 165, 233, 0.08), transparent 40%)
-          `
-        }}
-      />
-      
       {/* Rising bubbles */}
       {bubbles.map((b) => (
         <div 
@@ -240,27 +179,6 @@ const SupernovaEffect = () => {
 
   return (
     <>
-      {/* Energy field base */}
-      <div 
-        className="absolute inset-0"
-        style={{
-          background: 'radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.08), transparent 70%)',
-          animation: 'gentlePulse 6s ease-in-out infinite'
-        }}
-      />
-      
-      {/* Grid pattern */}
-      <div 
-        className="absolute inset-0 opacity-5"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(168, 85, 247, 0.3) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(168, 85, 247, 0.3) 1px, transparent 1px)
-          `,
-          backgroundSize: '50px 50px'
-        }}
-      />
-      
       {/* Energy particles */}
       {particles.map((p) => (
         <div
@@ -275,14 +193,6 @@ const SupernovaEffect = () => {
           }}
         />
       ))}
-      
-      {/* Scanlines overlay */}
-      <div 
-        className="absolute inset-0 opacity-[0.02]"
-        style={{
-          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, white 3px)'
-        }}
-      />
     </>
   );
 };
@@ -292,25 +202,6 @@ const SupernovaEffect = () => {
    ============================================== */
 const SalmonEffect = () => (
   <>
-    {/* Warm gradient waves */}
-    <div 
-      className="absolute inset-0 opacity-25"
-      style={{
-        background: `
-          radial-gradient(ellipse at 60% 30%, rgba(251, 113, 133, 0.15), transparent 60%),
-          radial-gradient(ellipse at 30% 70%, rgba(251, 113, 133, 0.1), transparent 50%)
-        `
-      }}
-    />
-    
-    {/* Organic shapes */}
-    <div 
-      className="absolute inset-0 opacity-10"
-      style={{
-        background: 'radial-gradient(circle at 20% 50%, rgba(251, 113, 133, 0.2) 0%, transparent 30%)',
-        animation: 'gentlePulse 8s ease-in-out infinite'
-      }}
-    />
   </>
 );
 
@@ -319,13 +210,6 @@ const SalmonEffect = () => (
    ============================================== */
 const MarbleEffect = () => (
   <>
-    {/* Subtle vignette */}
-    <div 
-      className="absolute inset-0 opacity-5"
-      style={{
-        background: 'radial-gradient(circle at 50% 50%, transparent 60%, var(--theme-text-title) 100%)'
-      }}
-    />
   </>
 );
 
