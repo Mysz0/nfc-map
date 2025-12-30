@@ -25,7 +25,7 @@ export default function Header({ isAdmin, username, email, showEmail, isDark, lo
              )}
           </div>
           
-          <h1 onClick={onUsernameTap} className="text-3xl font-bold tracking-tighter italic uppercase leading-none truncate transition-colors duration-500 cursor-pointer select-none active:opacity-50">
+          <h1 onClick={onUsernameTap} className="text-3xl font-bold tracking-tighter italic uppercase leading-none truncate transition-colors duration-500">
             {username || ''}<span className="text-[rgb(var(--theme-primary))] font-normal">.</span>
           </h1>
 
