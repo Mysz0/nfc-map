@@ -50,10 +50,14 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
 
   const deactivateExpiredItem = async (inventoryId) => {
     try {
-      // Get item to check quantity
-      const item = inventory.find(i => i.id === inventoryId);
+      // First, get the current item from database to check quantity
+      const { data: currentItem } = await supabase
+        .from('user_inventory')
+        .select('quantity')
+        .eq('id', inventoryId)
+        .single();
       
-      if (item && item.quantity <= 0) {
+      if (currentItem && currentItem.quantity <= 0) {
         // Delete from database if quantity is 0
         await supabase
           .from('user_inventory')

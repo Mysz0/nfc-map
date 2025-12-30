@@ -1,32 +1,42 @@
 import React, { useMemo } from 'react';
 
+// Detect iOS devices
+const isIOS = () => {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+};
+
 // Safe viewport wrapper that sits inside the app shell (not the viewport) to avoid triggering iOS safe-area bars.
-// Uses a small inset + safe-area padding and absolute positioning so it never touches screen edges.
-const AtmosphereFrame = ({ children }) => (
-  <div
-    className="pointer-events-none"
-    style={{
-      position: 'absolute',
-      inset: 0,
-      paddingTop: 'calc(env(safe-area-inset-top, 0px) + 10px)',
-      paddingRight: 'calc(env(safe-area-inset-right, 0px) + 10px)',
-      paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 10px)',
-      paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 10px)',
-      overflow: 'hidden',
-      zIndex: 0,
-      maxWidth: '100%',
-      maxHeight: '100%',
-      contain: 'layout paint size',
-      transform: 'translateZ(0)',
-      borderRadius: '16px',
-      WebkitOverflowScrolling: 'touch',
-    }}
-  >
-    <div className="absolute inset-0" style={{ pointerEvents: 'none' }}>
-      {children}
+// Uses a small inset + safe-area padding and absolute positioning so it never touches screen edges on iOS.
+// On non-iOS devices, uses full screen without constraints.
+const AtmosphereFrame = ({ children }) => {
+  const iOS = isIOS();
+  
+  return (
+    <div
+      className="pointer-events-none"
+      style={{
+        position: iOS ? 'absolute' : 'fixed',
+        inset: 0,
+        paddingTop: iOS ? 'calc(env(safe-area-inset-top, 0px) + 10px)' : 0,
+        paddingRight: iOS ? 'calc(env(safe-area-inset-right, 0px) + 10px)' : 0,
+        paddingBottom: iOS ? 'calc(env(safe-area-inset-bottom, 0px) + 10px)' : 0,
+        paddingLeft: iOS ? 'calc(env(safe-area-inset-left, 0px) + 10px)' : 0,
+        overflow: 'hidden',
+        zIndex: 0,
+        maxWidth: '100%',
+        maxHeight: '100%',
+        contain: 'layout paint size',
+        transform: 'translateZ(0)',
+        borderRadius: iOS ? '16px' : 0,
+        WebkitOverflowScrolling: 'touch',
+      }}
+    >
+      <div className="absolute inset-0" style={{ pointerEvents: 'none' }}>
+        {children}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /* ==============================================
    WINTER: Crystalline Frost
