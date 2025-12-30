@@ -19,7 +19,7 @@ export default function Login({ theme, setTheme, isDark }) {
       {/* Theme Toggle - Positioned to match the App's ThemeToggle feel */}
       <button 
         onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} 
-        className="fixed top-12 right-6 p-3.5 rounded-2xl border smart-glass transition-all z-[10000] active:scale-90"
+        className="fixed top-12 right-6 p-3.5 rounded-2xl border bg-[var(--theme-card-bg)] border-[var(--theme-border)] backdrop-blur-md transition-all z-[10000] active:scale-90 hover:bg-[var(--theme-card-hover)] hover:border-[var(--theme-border-hover)]"
       >
         {isDark ? (
           <Sun size={18} className="text-[rgb(var(--theme-primary))]" />
