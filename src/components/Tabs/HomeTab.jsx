@@ -15,7 +15,8 @@ export default function HomeTab({
   spots = {}, 
   streak,
   spotStreaks = {},
-  isDark 
+  isDark,
+  onScanningTap
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('ready'); 
@@ -206,7 +207,7 @@ export default function HomeTab({
             </button>
           </div>
         ) : (
-          <div className="smart-glass p-10 rounded-[3rem] border relative overflow-hidden group">
+          <div onClick={onScanningTap} className="smart-glass p-10 rounded-[3rem] border relative overflow-hidden group cursor-pointer active:opacity-70 transition-opacity select-none">
              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(var(--theme-primary),0.1)_0%,transparent_70%)] animate-pulse" />
              <div className="relative flex flex-col items-center justify-center">
                 <div className="relative mb-4">

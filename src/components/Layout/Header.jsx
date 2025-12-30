@@ -1,7 +1,7 @@
 import React from 'react';
 import { LogOut } from 'lucide-react';
 
-export default function Header({ isAdmin, username, email, showEmail, isDark, logoutMag, handleLogout }) {
+export default function Header({ isAdmin, username, email, showEmail, isDark, logoutMag, handleLogout, onUsernameTap }) {
   return (
     <header className="relative pt-16 pb-32 px-10 rounded-b-[4.5rem] border-b transition-colors duration-500 border-current/5">
       {/* Background Overlays */}
@@ -25,7 +25,7 @@ export default function Header({ isAdmin, username, email, showEmail, isDark, lo
              )}
           </div>
           
-          <h1 className="text-3xl font-bold tracking-tighter italic uppercase leading-none truncate transition-colors duration-500">
+          <h1 onClick={onUsernameTap} className="text-3xl font-bold tracking-tighter italic uppercase leading-none truncate transition-colors duration-500 cursor-pointer select-none active:opacity-50">
             {username || ''}<span className="text-[rgb(var(--theme-primary))] font-normal">.</span>
           </h1>
 

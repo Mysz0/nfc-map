@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import 'leaflet/dist/leaflet.css';
 
 // MODULAR IMPORTS
@@ -27,6 +27,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [statusMsg, setStatusMsg] = useState({ text: '', type: '' });
   const [konamiCode, setKonamiCode] = useState([]);
+  const [tapCount, setTapCount] = useState(0);
+  const tapTimerRef = useRef(null);
   const KONAMI_CODE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
   
   // 2. LOGIC EXTRACTION (Hooks)
@@ -99,14 +101,67 @@ export default function App() {
     });
   }, [KONAMI_CODE, unlockedThemes, buyTheme, fetchProfile]);
 
-  // Shake detection for mobile - unlock blackhole by shaking phone
-  const handleShake = useCallback(() => {
+  // Triple-tap detection for mobile - unlock blackhole by triple-tapping screen
+  const handleTripleTap = useCallback(() => {
     showToast('🌌 Black hole unlocked! 🌌', 'success');
     
     // Automatically buy/unlock blackhole theme (price 0 = free secret unlock)
     if (unlockedThemes && !unlockedThemes.includes('blackhole')) {
       buyTheme('blackhole', 0, fetchProfile);
     }
+  }, [unlockedThemes, buyTheme, fetchProfile]);
+
+  // Username tap handler
+  const handleUsernameTap = useCallback(() => {
+    setUnlockedSequence(prev => {
+      const newSequence = { ...prev, usernameTaps: prev.usernameTaps + 1 };
+      
+      // Reset if only username taps without scanning taps
+      if (newSequence.usernameTaps > 2 && newSequence.scanTaps === 0) {
+        return { usernameTaps: 0, scanTaps: 0 };
+      }
+      
+      // Check if sequence is complete (2 username + 5 scan)
+      if (newSequence.usernameTaps === 2 && newSequence.scanTaps === 5) {
+        showToast('🌌 Black hole unlocked! 🌌', 'success');
+        setUnlockedSequence({ usernameTaps: 0, scanTaps: 0 });
+        
+        if (unlockedThemes && !unlockedThemes.includes('blackhole')) {
+          buyTheme('blackhole', 0, fetchProfile);
+        }
+      }
+      
+      return newSequence;
+    });
+  }, [unlockedThemes, buyTheme, fetchProfile]);
+
+  // Scanning box tap handler
+  const handleScanningTap = useCallback(() => {
+    setUnlockedSequence(prev => {
+      // Only count if username taps exist
+      if (prev.usernameTaps === 0) {
+        return prev;
+      }
+      
+      const newSequence = { ...prev, scanTaps: prev.scanTaps + 1 };
+      
+      // Reset if too many scanning taps without completing
+      if (newSequence.scanTaps > 5) {
+        return { usernameTaps: 0, scanTaps: 0 };
+      }
+      
+      // Check if sequence is complete (2 username + 5 scan)
+      if (newSequence.usernameTaps === 2 && newSequence.scanTaps === 5) {
+        showToast('🌌 Black hole unlocked! 🌌', 'success');
+        setUnlockedSequence({ usernameTaps: 0, scanTaps: 0 });
+        
+        if (unlockedThemes && !unlockedThemes.includes('blackhole')) {
+          buyTheme('blackhole', 0, fetchProfile);
+        }
+      }
+      
+      return newSequence;
+    });
   }, [unlockedThemes, buyTheme, fetchProfile]);
 
   const { userLocation, mapCenter, isNearSpot, canClaim, activeSpotId, radiusBonus } = useGeoLocation(
@@ -135,41 +190,43 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKonamiCode);
   }, [handleKonamiCode]);
 
-  // Attach shake detector for mobile
+  // Attach triple-tap detector for mobile
   useEffect(() => {
-    let lastTime = 0;
-    let lastX = 0;
-    let lastY = 0;
-    let lastZ = 0;
-    const SHAKE_THRESHOLD = 30;
-    const SHAKE_TIME_THRESHOLD = 500; // ms between shakes
+    const handleTouchStart = () => {
+      setTapCount(prev => {
+        const newCount = prev + 1;
 
-    const handleMotion = (event) => {
-      const { x, y, z } = event.accelerationIncludingGravity;
-      const now = Date.now();
+        // Clear previous timer
+        if (tapTimerRef.current) {
+          clearTimeout(tapTimerRef.current);
+        }
 
-      // Calculate shake intensity
-      const deltaX = Math.abs(x - lastX);
-      const deltaY = Math.abs(y - lastY);
-      const deltaZ = Math.abs(z - lastZ);
-      const shakeMagnitude = deltaX + deltaY + deltaZ;
+        // Reset counter after 500ms of no taps
+        tapTimerRef.current = setTimeout(() => {
+          setTapCount(0);
+        }, 500);
 
-      if (
-        shakeMagnitude > SHAKE_THRESHOLD &&
-        now - lastTime > SHAKE_TIME_THRESHOLD
-      ) {
-        lastTime = now;
-        handleShake();
-      }
+        // Trigger on triple tap
+        if (newCount === 3) {
+          setTapCount(0);
+          if (tapTimerRef.current) {
+            clearTimeout(tapTimerRef.current);
+          }
+          handleTripleTap();
+        }
 
-      lastX = x;
-      lastY = y;
-      lastZ = z;
+        return newCount;
+      });
     };
 
-    window.addEventListener('devicemotion', handleMotion, false);
-    return () => window.removeEventListener('devicemotion', handleMotion);
-  }, [handleShake]);
+    window.addEventListener('touchstart', handleTouchStart, false);
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      if (tapTimerRef.current) {
+        clearTimeout(tapTimerRef.current);
+      }
+    };
+  }, [handleTripleTap]);
 
   // UPDATED: Loading screen now uses theme variables
   if (loading) return (
@@ -201,7 +258,8 @@ export default function App() {
         showEmail={showEmail} 
         isDark={isDark} 
         logoutMag={logoutMag} 
-        handleLogout={handleLogout} 
+        handleLogout={handleLogout}
+        onUsernameTap={handleUsernameTap}
       />
 
       <main className={`max-w-md mx-auto px-6 -mt-16 relative z-30 ${activeTab === 'profile' ? 'overflow-visible' : 'overflow-hidden'}`}>
@@ -222,6 +280,7 @@ export default function App() {
             streak={visitData?.streak || 0}
             spotStreaks={spotStreaks} 
             isDark={isDark}
+            onScanningTap={handleScanningTap}
           />
         )}
         
