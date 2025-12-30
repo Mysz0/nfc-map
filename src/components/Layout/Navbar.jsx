@@ -12,7 +12,7 @@ export default function Navbar({ activeTab, setActiveTab, isAdmin, isShrunk }) {
   ];
 
   return (
-    <div className="fixed bottom-3 left-0 right-0 flex justify-center w-full pointer-events-none z-50">
+    <div className="navbar-shell fixed bottom-3 left-0 right-0 flex justify-center w-full pointer-events-none z-50">
       <div className={`
         smart-glass pointer-events-auto rounded-[2.5rem] 
         flex items-center border shadow-2xl shadow-black/20 

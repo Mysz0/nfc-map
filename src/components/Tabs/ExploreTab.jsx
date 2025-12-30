@@ -95,6 +95,14 @@ export default function ExploreTab({
   const [isFollowing, setIsFollowing] = useState(!!userLocation);
   const [isFullScreen, setIsFullScreen] = useState(false);
 
+  // Toggle a body class so global UI (navbar, theme toggle) can hide in fullscreen
+  useEffect(() => {
+    const cls = 'map-fullscreen';
+    const body = document.body;
+    if (isFullScreen) body.classList.add(cls); else body.classList.remove(cls);
+    return () => body.classList.remove(cls);
+  }, [isFullScreen]);
+
   const toggleFullScreen = () => {
     setIsFullScreen((prev) => !prev);
   };
@@ -139,15 +147,20 @@ export default function ExploreTab({
   });
 
   return (
-    <div className={`explore-tab ${isFullScreen ? 'fullscreen' : ''}`} style={{ position: 'relative', borderRadius: '1rem', overflow: 'hidden' }}>
-      <button
-        onClick={toggleFullScreen}
-        className="absolute top-4 right-4 z-10 bg-white p-2 rounded shadow-md"
-      >
-        {isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
-      </button>
+    <div
+      className={`${isFullScreen ? 'fixed inset-0 z-[1200]' : 'relative w-full mt-4 mb-10'} rounded-[32px] overflow-hidden border transition-all duration-500 bg-[var(--theme-map-bg)] shadow-2xl`}
+      style={{ minHeight: mapHeight, height: mapHeight }}
+    >
+      <div className="absolute top-4 left-4 z-[1300] pointer-events-none">
+        <button
+          onClick={toggleFullScreen}
+          className="pointer-events-auto smart-glass border px-3 py-2 rounded-2xl text-xs font-bold uppercase tracking-[0.12em] shadow-lg hover:scale-95 active:scale-90 transition"
+        >
+          {isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
+        </button>
+      </div>
 
-      <div className="relative w-full" style={{ height: mapHeight }}>
+      <div className="relative w-full h-full">
         <MapContainer 
           center={stableUserLoc ? [stableUserLoc.lat, stableUserLoc.lng] : fallbackCenter} 
           zoom={stableUserLoc ? 16 : 2} 

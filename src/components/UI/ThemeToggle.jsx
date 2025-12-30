@@ -23,7 +23,7 @@ export default function ThemeToggle({ themeMag, setTheme, isDark, isAtTop }) {
       onMouseLeave={themeMag.reset}
       onClick={handleToggle} 
       type="button"
-      className={`fixed z-[100000] p-3.5 rounded-2xl border active:scale-90 transform-gpu touch-none transition-all duration-500 flex items-center justify-center 
+      className={`theme-toggle fixed z-[100000] p-3.5 rounded-2xl border active:scale-90 transform-gpu touch-none transition-all duration-500 flex items-center justify-center 
         /* UPDATED: Using dynamic theme variables instead of hardcoded zinc/white */
         bg-[var(--theme-card-bg)] 
         border-[var(--theme-border)] 

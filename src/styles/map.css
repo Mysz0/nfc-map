@@ -17,6 +17,10 @@
   border-radius: 1rem;
   overflow: hidden;
 }
+/* Hide global chrome when map goes fullscreen */
+body.map-fullscreen { overflow: hidden; }
+body.map-fullscreen .navbar-shell { display: none !important; }
+body.map-fullscreen .theme-toggle { display: none !important; }
 
 .marker-pin-spot .dot { 
   width: 10px; height: 10px; background: #71717a; 
