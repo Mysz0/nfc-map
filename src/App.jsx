@@ -200,7 +200,7 @@ export default function App() {
         onUsernameTap={handleUsernameTap}
       />
 
-      <main className={`max-w-md mx-auto px-6 -mt-16 relative z-30 ${['profile', 'home', 'leaderboard'].includes(activeTab) ? 'overflow-visible' : 'overflow-hidden'}`}>
+      <main className={`max-w-md mx-auto px-6 -mt-16 relative z-30 ${['profile', 'home', 'leaderboard', 'store', 'admin'].includes(activeTab) ? 'overflow-visible' : 'overflow-hidden'}`}>
         {/* 🚀 Atmosphere overlays constrained to the content shell to avoid safe-area edges */}
         <ThemeAtmosphere activeStyle={appStyle} />
 

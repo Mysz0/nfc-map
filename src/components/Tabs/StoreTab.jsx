@@ -108,7 +108,7 @@ export default function StoreTab({ totalPoints, shopItems = [], inventory = [], 
       )}
 
       {/* Balance Card */}
-      <div className="smart-glass p-8 rounded-[3rem] border border-current/5 overflow-hidden relative shadow-xl">
+      <div className="smart-glass p-8 rounded-[3rem] border border-current/5 relative shadow-xl">
         <div className="relative z-10">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-1">Available Balance</p>
           <div className="flex items-center gap-2">
@@ -120,7 +120,7 @@ export default function StoreTab({ totalPoints, shopItems = [], inventory = [], 
           </div>
         </div>
         <div 
-          className="absolute -right-4 -top-4 opacity-10 rotate-12" 
+          className="absolute -right-4 -top-4 opacity-10 rotate-12 overflow-hidden" 
           style={{ color: 'rgb(var(--theme-primary))' }}
         >
           <Sparkles size={140} />

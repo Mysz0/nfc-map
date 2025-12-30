@@ -95,7 +95,7 @@ export default function AdminTab({
     : [40.730610, -73.935242];
 
   return (
-    <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300 pb-32">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-700 pb-32">
       
       {/* --- CUSTOM PURGE MODAL --- */}
       {purgeTarget && (
