@@ -14,11 +14,11 @@ export default function Navbar({ activeTab, setActiveTab, isAdmin, isShrunk }) {
   return (
     <div className="navbar-shell fixed bottom-3 left-0 right-0 flex justify-center w-full pointer-events-none z-50">
       <div className={`
-        smart-glass pointer-events-auto rounded-[2.5rem] 
+        smart-glass rounded-[2.5rem] 
         flex items-center border shadow-2xl shadow-black/20 
         w-[92%] max-w-[420px]
         transition-[padding,gap,transform,width] duration-700 ease-in-out
-        ${isShrunk ? 'p-1 gap-0' : 'p-1.5 gap-1'}
+        ${isShrunk ? 'p-1 gap-0 pointer-events-none' : 'p-1.5 gap-1 pointer-events-auto'}
       `}>
         {navItems.map((item) => (
           (!item.admin || isAdmin) && (

@@ -220,8 +220,8 @@ export default function App() {
         fixed bottom-8 left-0 right-0 z-[5000] px-8
         transition-all duration-700 cubic-bezier(0.16, 1, 0.3, 1)
         ${isNavbarShrunk 
-          ? 'translate-y-[150%] opacity-0 scale-95 pointer-events-none' 
-          : 'translate-y-0 opacity-100 scale-100 pointer-events-auto'}
+          ? 'translate-y-[150%] opacity-0 scale-95 pointer-events-none invisible' 
+          : 'translate-y-0 opacity-100 scale-100 pointer-events-auto visible'}
       `}>
         <Navbar 
           activeTab={activeTab} 
