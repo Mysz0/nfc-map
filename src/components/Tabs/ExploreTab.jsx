@@ -93,6 +93,13 @@ export default function ExploreTab({
 }) {
   const [zoom, setZoom] = useState(16);
   const [isFollowing, setIsFollowing] = useState(!!userLocation);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
+  const toggleFullScreen = () => {
+    setIsFullScreen((prev) => !prev);
+  };
+
+  const mapHeight = isFullScreen ? '100vh' : '70vh';
 
   const MapDragHandler = () => {
     useMapEvents({
@@ -132,138 +139,132 @@ export default function ExploreTab({
   });
 
   return (
-    <div className="relative w-full h-[70vh] rounded-[3rem] overflow-hidden border transition-all duration-700 bg-[var(--theme-map-bg)]">
-      <MapContainer 
-        center={stableUserLoc ? [stableUserLoc.lat, stableUserLoc.lng] : fallbackCenter} 
-        zoom={stableUserLoc ? 16 : 2} 
-        zoomControl={false} 
+    <div className={`explore-tab ${isFullScreen ? 'fullscreen' : ''}`} style={{ position: 'relative', borderRadius: '1rem', overflow: 'hidden' }}>
+      <button
+        onClick={toggleFullScreen}
+        className="absolute top-4 right-4 z-10 bg-white p-2 rounded shadow-md"
       >
-        <ZoomHandler setZoom={setZoom} />
-        <MapInvalidator />
-        <MapRecenter location={stableUserLoc} isFollowing={isFollowing} />
-        <MapDragHandler />
-        
-        <TileLayer
-          key={isDark ? 'dark' : 'light'}
-          url={isDark 
-            ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" 
-            : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"}
-          keepBuffer={3}
-        />
+        {isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
+      </button>
 
-        <MapInterface 
-          stableUserLoc={stableUserLoc} 
-          claimRadius={claimRadius} 
-          customRadius={customRadius} 
-          radiusBonus={radiusBonus}
-          onRecenter={() => setIsFollowing(true)}
-        />
+      <div className="relative w-full" style={{ height: mapHeight }}>
+        <MapContainer 
+          center={stableUserLoc ? [stableUserLoc.lat, stableUserLoc.lng] : fallbackCenter} 
+          zoom={stableUserLoc ? 16 : 2} 
+          zoomControl={false} 
+          style={{ height: '100%', width: '100%' }}
+          className="leaflet-container"
+        >
+          <ZoomHandler setZoom={setZoom} />
+          <MapInvalidator />
+          <MapRecenter location={stableUserLoc} isFollowing={isFollowing} />
+          <MapDragHandler />
+          
+          <TileLayer
+            key={isDark ? 'dark' : 'light'}
+            url={isDark 
+              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" 
+              : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"}
+            keepBuffer={3}
+          />
 
-        {stableUserLoc && (
-          <React.Fragment key={`user-loc-${stableUserLoc.lat}-${stableUserLoc.lng}-${radiusBonus}`}>
-            <Circle 
-              center={[stableUserLoc.lat, stableUserLoc.lng]}
-              radius={(claimRadius || 20) + radiusBonus}
-              pathOptions={{
-                fillColor: 'rgb(var(--theme-primary))',
-                fillOpacity: 0.15,
-                color: 'rgb(var(--theme-primary))',
-                weight: 2,
-                dashArray: '5, 5'
-              }}
-            />
-            
-            <Circle 
-              center={[stableUserLoc.lat, stableUserLoc.lng]}
-              radius={(customRadius || 250) + radiusBonus}
-              pathOptions={{
-                fillColor: 'rgb(var(--theme-primary))',
-                fillOpacity: 0.05,
-                color: 'rgb(var(--theme-primary))',
-                weight: 1,
-                dashArray: '5, 10'
-              }}
-            />
-            
-            <Marker 
-              position={[stableUserLoc.lat, stableUserLoc.lng]} 
-              icon={animatedUserIcon} 
-              zIndexOffset={1000} 
-            />
-          </React.Fragment>
-        )}
+          <MapInterface 
+            stableUserLoc={stableUserLoc} 
+            claimRadius={claimRadius} 
+            customRadius={customRadius} 
+            radiusBonus={radiusBonus}
+            onRecenter={() => setIsFollowing(true)}
+          />
 
-        {Object.values(spots).map((spot) => {
-          const isUnlocked = unlockedSpots.includes(spot.id);
-          const hasUpvoted = spot.myVote === 'up';
-          const hasDownvoted = spot.myVote === 'down';
+          {stableUserLoc && (
+            <React.Fragment key={`user-loc-${stableUserLoc.lat}-${stableUserLoc.lng}-${radiusBonus}`}>
+              <Circle 
+                center={[stableUserLoc.lat, stableUserLoc.lng]}
+                radius={(claimRadius || 20) + radiusBonus}
+                pathOptions={{
+                  fillColor: 'rgb(var(--theme-primary))',
+                  fillOpacity: 0.15,
+                  color: 'rgb(var(--theme-primary))',
+                  weight: 2,
+                  dashArray: '5, 5'
+                }}
+              />
+              
+              <Circle 
+                center={[stableUserLoc.lat, stableUserLoc.lng]}
+                radius={(customRadius || 250) + radiusBonus}
+                pathOptions={{
+                  fillColor: 'rgb(var(--theme-primary))',
+                  fillOpacity: 0.05,
+                  color: 'rgb(var(--theme-primary))',
+                  weight: 1,
+                  dashArray: '5, 10'
+                }}
+              />
+              
+              <Marker 
+                position={[stableUserLoc.lat, stableUserLoc.lng]} 
+                icon={animatedUserIcon} 
+                zIndexOffset={1000} 
+              />
+            </React.Fragment>
+          )}
 
-          return (
-            <Marker key={spot.id} position={[spot.lat, spot.lng]} icon={spotIcon(isUnlocked)}>
-              <Popup closeButton={false} offset={[0, -5]}>
-                <div className="smart-glass p-1.5 px-2 rounded-xl border min-w-[140px] shadow-2xl overflow-hidden">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <p className={`text-[7px] font-black uppercase tracking-[0.2em] ${isUnlocked ? 'text-[rgb(var(--theme-primary))]' : 'opacity-40'}`}>
-                      {isUnlocked ? 'UNLOCKED' : 'LOCKED'}
-                    </p>
-                    {isUnlocked ? <CheckCircle2 size={8} className="text-[rgb(var(--theme-primary))]" /> : <Lock size={8} className="opacity-40" />}
-                  </div>
-                  
-                  <p className="text-[10px] font-bold truncate mb-1.5">{spot.name}</p>
+          {Object.values(spots).map((spot) => {
+            const isUnlocked = unlockedSpots.includes(spot.id);
+            const hasUpvoted = spot.myVote === 'up';
+            const hasDownvoted = spot.myVote === 'down';
 
-                  <div className="flex items-center justify-between pt-1.5 border-t border-current opacity-10">
-                    <div className="flex items-center gap-1 opacity-100">
-                      <button 
-                        disabled={!isUnlocked}
-                        onClick={() => isUnlocked && onVote(spot.id, 'upvotes')}
-                        className={`p-1 rounded-md transition-all duration-300 ${
-                          isUnlocked 
-                            ? hasUpvoted 
-                              ? 'bg-[rgb(var(--theme-primary))] text-white shadow-[0_0_10px_rgba(var(--theme-primary),0.5)] scale-110' 
-                              : 'hover:bg-[rgb(var(--theme-primary))]/20 text-[rgb(var(--theme-primary))]' 
-                            : 'opacity-10 grayscale cursor-not-allowed'
-                        }`}
-                      >
-                        <ChevronUp size={12} strokeWidth={hasUpvoted ? 4 : 2} />
-                      </button>
-                      <button 
-                        disabled={!isUnlocked}
-                        onClick={() => isUnlocked && onVote(spot.id, 'downvotes')}
-                        className={`p-1 rounded-md transition-all duration-300 ${
-                          isUnlocked 
-                            ? hasDownvoted 
-                              ? 'bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.5)] scale-110' 
-                              : 'hover:bg-red-500/20 text-red-500' 
-                            : 'opacity-10 grayscale cursor-not-allowed'
-                        }`}
-                      >
-                        <ChevronDown size={12} strokeWidth={hasDownvoted ? 4 : 2} />
-                      </button>
+            return (
+              <Marker key={spot.id} position={[spot.lat, spot.lng]} icon={spotIcon(isUnlocked)}>
+                <Popup closeButton={false} offset={[0, -5]}>
+                  <div className="smart-glass p-1.5 px-2 rounded-xl border min-w-[140px] shadow-2xl overflow-hidden">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <p className={`text-[7px] font-black uppercase tracking-[0.2em] ${isUnlocked ? 'text-[rgb(var(--theme-primary))]' : 'opacity-40'}`}>
+                        {isUnlocked ? 'UNLOCKED' : 'LOCKED'}
+                      </p>
+                      {isUnlocked ? <CheckCircle2 size={8} className="text-[rgb(var(--theme-primary))]" /> : <Lock size={8} className="opacity-40" />}
                     </div>
                     
-                    <div className="text-right leading-none">
-                      <p className={`text-[11px] font-black tracking-tighter ${isUnlocked ? 'opacity-100' : 'opacity-20'}`}>
-                        {((spot.upvotes || 0) - (spot.downvotes || 0)).toLocaleString()}
-                      </p>
-                      <p className="text-[5px] uppercase font-black opacity-30">Rating</p>
+                    <p className="text-[10px] font-bold truncate mb-1.5">{spot.name}</p>
+
+                    <div className="flex items-center justify-between pt-1.5 border-t border-current opacity-10">
+                      <div className="flex items-center gap-1 opacity-100">
+                        <button 
+                          disabled={!isUnlocked}
+                          onClick={() => isUnlocked && onVote(spot.id, 'upvotes')}
+                          className={`p-1 rounded-md transition-all duration-300 ${
+                            isUnlocked 
+                              ? hasUpvoted 
+                                ? 'bg-[rgb(var(--theme-primary))] text-white shadow-[0_0_10px_rgba(var(--theme-primary),0.5)] scale-110' 
+                                : 'hover:bg-[rgb(var(--theme-primary))]/20 text-[rgb(var(--theme-primary))]' 
+                              : 'opacity-10 grayscale cursor-not-allowed'
+                          }`}
+                        >
+                          <ChevronUp size={12} strokeWidth={hasUpvoted ? 4 : 2} />
+                        </button>
+                        <button 
+                          disabled={!isUnlocked}
+                          onClick={() => isUnlocked && onVote(spot.id, 'downvotes')}
+                          className={`p-1 rounded-md transition-all duration-300 ${
+                            isUnlocked 
+                              ? hasDownvoted 
+                                ? 'bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.5)] scale-110' 
+                                : 'hover:bg-red-500/20 text-red-500 rounded-md' 
+                              : 'opacity-50 cursor-not-allowed rounded-md'
+                          }`}
+                        >
+                          <ChevronDown size={12} strokeWidth={hasDownvoted ? 4 : 2} />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
-      </MapContainer>
-
-      {!isFollowing && stableUserLoc && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none">
-          <div className="smart-glass px-4 py-2 rounded-full border shadow-lg">
-            <p className="text-[9px] font-black uppercase tracking-widest opacity-40">
-              Auto-follow disabled
-            </p>
-          </div>
-        </div>
-      )}
+                </Popup>
+              </Marker>
+            );
+          })}
+        </MapContainer>
+      </div>
     </div>
   );
 }
