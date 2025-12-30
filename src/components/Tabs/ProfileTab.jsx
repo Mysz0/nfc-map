@@ -14,9 +14,7 @@ export default function ProfileTab({
   setAppStyle = () => {},
   showToast = () => {},
   visitData = { streak: 0 },
-  unlockedThemes = ['emerald', 'winter'],
-  totalPoints = 0,
-  buyTheme = () => {}
+  unlockedThemes = ['emerald', 'winter']
 }) {
   const provider = user?.app_metadata?.provider || 'account';
   const providerName = provider.charAt(0).toUpperCase() + provider.slice(1);
@@ -25,13 +23,13 @@ export default function ProfileTab({
   const isSupernovaLocked = streak < 50;
 
   const themes = [
-    { id: 'emerald', label: 'Emerald', icon: Leaf, color: 'bg-emerald-500', price: 0, free: true },
-    { id: 'winter', label: 'Winter', icon: Snowflake, color: 'bg-blue-400', price: 0, free: true },
-    { id: 'koi', label: 'Koi', icon: Waves, color: 'bg-[#EA4426]', price: 500 },
-    { id: 'sakura', label: 'Sakura', icon: Flower, color: 'bg-[#F4ACB7]', price: 750 },
-    { id: 'salmon', label: 'Salmon', icon: Fish, color: 'bg-[#FF8C73]', price: 600 },
-    { id: 'abyss', label: 'Abyss', icon: Shell, color: 'bg-[#FB923C]', price: 1000 },
-    { id: 'marble', label: 'Marble', icon: Layers, color: 'bg-[#18181b]', price: 800 },
+    { id: 'emerald', label: 'Emerald', icon: Leaf, color: 'bg-emerald-500' },
+    { id: 'winter', label: 'Winter', icon: Snowflake, color: 'bg-blue-400' },
+    { id: 'koi', label: 'Koi', icon: Waves, color: 'bg-[#EA4426]' },
+    { id: 'sakura', label: 'Sakura', icon: Flower, color: 'bg-[#F4ACB7]' },
+    { id: 'salmon', label: 'Salmon', icon: Fish, color: 'bg-[#FF8C73]' },
+    { id: 'abyss', label: 'Abyss', icon: Shell, color: 'bg-[#FB923C]' },
+    { id: 'marble', label: 'Marble', icon: Layers, color: 'bg-[#18181b]' },
   ];
 
   const handleThemeClick = (theme) => {
@@ -40,11 +38,7 @@ export default function ProfileTab({
     if (isUnlocked) {
       setAppStyle(theme.id);
     } else {
-      if (totalPoints < theme.price) {
-        showToast(`Need ${theme.price}XP (You have ${totalPoints}XP)`, "error");
-      } else {
-        buyTheme(theme.id, theme.price);
-      }
+      showToast('Unlock this theme in the Store!', 'error');
     }
   };
 
@@ -131,9 +125,6 @@ export default function ProfileTab({
                 {!isUnlocked && <Lock size={12} className="absolute top-1 right-1 opacity-50" />}
                 <Icon size={14} />
                 <span className="text-[10px] font-bold uppercase">{theme.label}</span>
-                {!isUnlocked && !theme.free && (
-                  <span className="absolute bottom-1 text-[8px] font-black opacity-50">{theme.price}XP</span>
-                )}
               </button>
             );
           })}

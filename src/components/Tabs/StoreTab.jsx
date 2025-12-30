@@ -8,16 +8,43 @@ import {
   Maximize, 
   CheckCircle2, 
   Clock, 
-  AlertCircle 
+  AlertCircle,
+  Palette,
+  Lock,
+  Leaf,
+  Snowflake,
+  Waves,
+  Flower,
+  Fish,
+  Shell,
+  Layers
 } from 'lucide-react';
 
-export default function StoreTab({ totalPoints, shopItems = [], inventory = [], onBuy, onActivate, isDark }) {
+export default function StoreTab({ totalPoints, shopItems = [], inventory = [], onBuy, onActivate, onBuyTheme, unlockedThemes = ['emerald', 'winter'], isDark }) {
   const [view, setView] = useState('shop');
   const [confirmItem, setConfirmItem] = useState(null);
+  const [confirmTheme, setConfirmTheme] = useState(null);
 
   const iconMap = {
     Zap: <Zap size={24} className="text-yellow-400" />,
     Maximize: <Maximize size={24} className="text-blue-400" />
+  };
+
+  // Theme definitions with prices and icons
+  const themes = [
+    { id: 'koi', name: 'Koi', price: 50, icon: Waves, color: '#EA4426' },
+    { id: 'sakura', name: 'Sakura', price: 100, icon: Flower, color: '#F4ACB7' },
+    { id: 'salmon', name: 'Salmon', price: 150, icon: Fish, color: '#FF8C73' },
+    { id: 'abyss', name: 'Abyss', price: 200, icon: Shell, color: '#FB923C' },
+    { id: 'marble', name: 'Marble', price: 250, icon: Layers, color: '#A1A1AA' },
+    { id: 'blackhole', name: 'Blackhole', price: 500, icon: Sparkles, color: '#7C3AED' },
+  ];
+
+  const handleBuyTheme = (theme) => {
+    if (onBuyTheme) {
+      onBuyTheme(theme.id, theme.price);
+    }
+    setConfirmTheme(null);
   };
 
   return (
@@ -52,6 +79,35 @@ export default function StoreTab({ totalPoints, shopItems = [], inventory = [], 
         </div>
       )}
 
+      {/* Theme Confirmation Modal */}
+      {confirmTheme && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
+          <div className="smart-glass border border-white/10 p-8 rounded-[2.5rem] w-full max-w-xs text-center shadow-2xl animate-in zoom-in duration-300">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10" style={{ background: confirmTheme.color }}>
+              <Palette className="text-white" size={32} />
+            </div>
+            <h3 className="text-xl font-black mb-2">Unlock {confirmTheme.name}?</h3>
+            <p className="opacity-50 text-[10px] mb-6 uppercase tracking-widest font-bold">
+              Spend {confirmTheme.price} XP for this theme?
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setConfirmTheme(null)} 
+                className="flex-1 py-4 rounded-2xl bg-current/10 font-bold text-[10px] uppercase tracking-widest active:scale-95 transition-transform"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => handleBuyTheme(confirmTheme)} 
+                className="flex-1 py-4 rounded-2xl bg-[rgb(var(--theme-primary))] text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-[var(--theme-primary-glow)] active:scale-95 transition-transform"
+              >
+                Unlock
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Balance Card */}
       <div className="smart-glass p-8 rounded-[3rem] border border-current/5 overflow-hidden relative shadow-xl">
         <div className="relative z-10">
@@ -78,6 +134,10 @@ export default function StoreTab({ totalPoints, shopItems = [], inventory = [], 
           <ShoppingCart size={14} />
           <span className="text-[10px] font-black uppercase tracking-widest">Market</span>
         </button>
+        <button onClick={() => setView('themes')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[1.6rem] transition-all duration-500 ${view === 'themes' ? 'bg-[rgb(var(--theme-primary))] text-white shadow-lg shadow-[var(--theme-primary-glow)]' : 'opacity-40'}`}>
+          <Palette size={14} />
+          <span className="text-[10px] font-black uppercase tracking-widest">Themes</span>
+        </button>
         <button onClick={() => setView('inventory')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[1.6rem] transition-all duration-500 ${view === 'inventory' ? 'bg-[rgb(var(--theme-primary))] text-white shadow-lg shadow-[var(--theme-primary-glow)]' : 'opacity-40'}`}>
           <Package size={14} />
           <span className="text-[10px] font-black uppercase tracking-widest">Inventory</span>
@@ -85,8 +145,52 @@ export default function StoreTab({ totalPoints, shopItems = [], inventory = [], 
       </div>
 
       <div className="grid grid-cols-1 gap-4 px-2">
-        {view === 'shop' ? (
-          shopItems.map((item) => (
+        {view === 'themes' ? (
+          /* Theme Shop Grid */
+          <div className="grid grid-cols-2 gap-3">
+            {themes.map((theme) => {
+              const isUnlocked = unlockedThemes.includes(theme.id);
+              const canAfford = totalPoints >= theme.price;
+              const ThemeIcon = theme.icon;
+              return (
+                <button
+                  key={theme.id}
+                  onClick={() => !isUnlocked && canAfford && setConfirmTheme(theme)}
+                  disabled={isUnlocked || !canAfford}
+                  className={`relative p-4 rounded-[2rem] border transition-all duration-300 ${
+                    isUnlocked 
+                      ? 'smart-glass border-green-500/50 bg-green-500/10' 
+                      : canAfford
+                        ? 'smart-glass border-current/10 hover:border-[rgb(var(--theme-primary))]/30 active:scale-95'
+                        : 'smart-glass border-current/5 opacity-40 cursor-not-allowed'
+                  }`}
+                >
+                  <div 
+                    className={`w-12 h-12 rounded-xl mx-auto mb-3 shadow-lg flex items-center justify-center ${
+                      isUnlocked ? 'opacity-60' : ''
+                    }`}
+                    style={{ background: theme.color }}
+                  >
+                    <ThemeIcon size={24} className="text-white" />
+                  </div>
+                  <p className="font-bold text-sm capitalize mb-1">{theme.name}</p>
+                  {isUnlocked ? (
+                    <div className="flex items-center justify-center gap-1 text-green-500">
+                      <CheckCircle2 size={12} />
+                      <span className="text-[9px] font-black uppercase">Owned</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-1">
+                      <Lock size={10} className="opacity-50" />
+                      <span className="text-[10px] font-black opacity-60">{theme.price} XP</span>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        ) : view === 'shop' ? (
+          shopItems.filter(item => item.category !== 'theme').map((item) => (
             <div key={item.id} className="smart-glass p-5 rounded-[2.5rem] border border-current/5 flex items-center justify-between group transition-all hover:border-[rgb(var(--theme-primary))]/20">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-current/[0.03] flex items-center justify-center border border-current/5">
@@ -113,8 +217,9 @@ export default function StoreTab({ totalPoints, shopItems = [], inventory = [], 
             </div>
           ))
         ) : (
-          inventory.length > 0 ? (
+          inventory.filter(inv => inv.shop_items?.category !== 'theme').length > 0 ? (
             [...inventory]
+              .filter(inv => inv.shop_items?.category !== 'theme')
               .sort((a, b) => (a.shop_items?.name || "").localeCompare(b.shop_items?.name || ""))
               .map((inv) => (
               <div key={inv.id} className="smart-glass p-5 rounded-[2.5rem] border border-current/5 flex items-center gap-4 relative overflow-hidden group">

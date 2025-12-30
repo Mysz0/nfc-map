@@ -140,17 +140,50 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
     }
   };
 
-  const buyTheme = async (themeName, price) => {
-    if (totalPoints < price || loading) return;
+  const buyTheme = async (themeName, price, onSuccess) => {
+    if (totalPoints < price) {
+      showToast(`Need ${price}XP (You have ${totalPoints}XP)`, "error");
+      return;
+    }
+    
+    if (loading) return;
+    
     setLoading(true);
     try {
-      // Find theme item in shop (stored in description field)
-      const themeItem = shopItems.find(item => item.category === 'theme' && item.description === themeName);
-      if (!themeItem) {
-        showToast("Theme not found", "error");
+      // Get theme from shop_items
+      const { data: themeItem, error: itemError } = await supabase
+        .from('shop_items')
+        .select('id')
+        .eq('name', themeName)
+        .eq('category', 'theme')
+        .single();
+
+      if (itemError) throw itemError;
+
+      // Check if already in inventory
+      const { data: existing } = await supabase
+        .from('user_inventory')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('item_id', themeItem.id)
+        .maybeSingle();
+
+      if (existing) {
+        showToast('Theme already unlocked!', 'error');
         setLoading(false);
         return;
       }
+
+      // Insert into user_inventory (trigger will auto-unlock in profiles)
+      const { error: inventoryError } = await supabase
+        .from('user_inventory')
+        .insert({
+          user_id: user.id,
+          item_id: themeItem.id,
+          quantity: 1
+        });
+
+      if (inventoryError) throw inventoryError;
 
       // Deduct points
       const { error: pointsError } = await supabase
@@ -159,21 +192,27 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
         .eq('id', user.id);
 
       if (pointsError) throw pointsError;
-
-      // Insert into inventory (trigger will handle unlocking)
-      await supabase.from('user_inventory').insert({ 
-        user_id: user.id, 
-        item_id: themeItem.id, 
-        quantity: 1, 
-        is_active: false 
-      });
       
       setTotalPoints(prev => prev - price);
-      showToast(`Unlocked ${themeItem.name}!`, "success");
+      showToast(`Unlocked ${themeName} theme!`, 'success');
+      
+      // Debug: Check if theme was added to profiles
+      const { data: checkProfile } = await supabase
+        .from('profiles')
+        .select('unlocked_themes')
+        .eq('id', user.id)
+        .single();
+      
+      console.log('Theme purchase complete. Unlocked themes in DB:', checkProfile?.unlocked_themes);
+      
+      // Refresh shop inventory
       await fetchData();
+      
+      // Call success callback to refresh profile
+      if (onSuccess) onSuccess();
     } catch (err) {
       console.error('Theme purchase error:', err);
-      showToast("Theme unlock failed", "error");
+      showToast(`Purchase failed: ${err.message}`, "error");
     } finally {
       setLoading(false);
     }
@@ -231,5 +270,5 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  return { shopItems, inventory, buyItem, activateItem, loading, bonuses };
+  return { shopItems, inventory, buyItem, activateItem, loading, bonuses, buyTheme };
 }

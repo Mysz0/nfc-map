@@ -107,7 +107,7 @@ export default function App() {
   return (
     <div className="min-h-screen relative pb-36 transition-all duration-700 ease-in-out bg-[var(--theme-map-bg)] text-[var(--theme-text-title)]">
 
-      <Toast statusMsg={statusMsg} />
+      <Toast statusMsg={statusMsg} setStatusMsg={setStatusMsg} />
 
       <ThemeToggle 
         themeMag={themeMag} 
@@ -181,8 +181,6 @@ export default function App() {
             showToast={showToast}
             visitData={visitData}
             unlockedThemes={unlockedThemes}
-            totalPoints={totalPoints}
-            buyTheme={buyTheme}
           />
         )}
 
@@ -194,6 +192,8 @@ export default function App() {
             inventory={inventory} 
             onBuy={buyItem}
             onActivate={activateItem}
+            onBuyTheme={(themeName, price) => buyTheme(themeName, price, fetchProfile)}
+            unlockedThemes={unlockedThemes}
           />
         )} 
 

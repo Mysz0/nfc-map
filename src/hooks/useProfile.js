@@ -38,6 +38,8 @@ export function useProfile(user, showToast, fetchLeaderboard) {
         setLastChange(profile.last_username_change);
         setCustomRadius(profile.custom_radius || 250);
         setClaimRadius(profile.claim_radius || 20);
+        
+        console.log('fetchProfile: Setting unlocked themes to:', profile.unlocked_themes);
         setUnlockedThemes(profile.unlocked_themes || ['emerald', 'winter']);
 
         // Streak & Visit Logic
@@ -74,12 +76,19 @@ export function useProfile(user, showToast, fetchLeaderboard) {
     } catch (err) {
       console.error("Profile Fetch Error:", err);
     }
-  }, [user?.id, showToast, fetchLeaderboard]);
+  }, [user?.id]);
 
   // Initial load
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  // Handle streak toast separately to avoid dependency loop
+  useEffect(() => {
+    if (visitData.streak > 0 && showToast) {
+      // Only show on actual new streak update, not every render
+    }
+  }, [visitData.streak]);
 
   const saveUsername = async () => {
     if (!user?.id) return;
@@ -167,6 +176,7 @@ export function useProfile(user, showToast, fetchLeaderboard) {
     userRole, totalPoints, setTotalPoints,
     showEmail, lastChange, customRadius, claimRadius, visitData,
     saveUsername, updateRadius, updateClaimRadius, toggleEmailVisibility, resetTimer,
-    fetchProfile
+    fetchProfile,
+    unlockedThemes
   };
 }
