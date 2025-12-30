@@ -146,7 +146,8 @@ export default function ProfileTab({
                 : 'opacity-40 hover:opacity-100'
             }`}
           >
-            {isSupernovaLocked ? <Lock size={12} /> : <Sparkles size={14} />}
+            {isSupernovaLocked && <Lock size={12} className="absolute top-1 right-1 opacity-50" />}
+            <Sparkles size={14} />
             <span className="text-[10px] font-bold uppercase">Supernova</span>
           </button>
         </div>
