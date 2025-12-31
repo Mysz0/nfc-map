@@ -47,17 +47,25 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
       };
     }
     
-    // Timed items: Show time based on active_count stacks
-    const activeCount = item.active_count || 1;
-    const durationMs = item.shop_items.duration_hours * 60 * 60 * 1000 * activeCount;
-    const startTime = new Date(item.activated_at).getTime();
-    const expiryTime = startTime + durationMs;
+    // Timed items: Use expires_at if available, otherwise calculate from activated_at + duration
     const now = new Date().getTime();
+    let expiryTime;
+    
+    if (item.expires_at) {
+      expiryTime = new Date(item.expires_at).getTime();
+    } else {
+      // Fallback for old data without expires_at
+      const durationMs = item.shop_items.duration_hours * 60 * 60 * 1000;
+      const startTime = new Date(item.activated_at).getTime();
+      expiryTime = startTime + durationMs;
+    }
+    
     const diff = expiryTime - now;
 
     if (diff <= 0) return { timeLeft: "EXPIRED", progress: 0 };
 
-    const progress = Math.max(0, Math.min(100, (diff / durationMs) * 100));
+    const totalDuration = expiryTime - new Date(item.activated_at).getTime();
+    const progress = Math.max(0, Math.min(100, (diff / totalDuration) * 100));
     const h = Math.floor(diff / (1000 * 60 * 60));
     const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     const s = Math.floor((diff % (1000 * 60)) / 1000);
@@ -69,7 +77,7 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
     try {
       const { data: currentItem } = await supabase
         .from('user_inventory')
-        .select('quantity, active_count')
+        .select('quantity, active_count, expires_at')
         .eq('id', inventoryId)
         .single();
       
@@ -77,19 +85,18 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
       
       const activeCount = currentItem.active_count || 0;
       
-      // If there are more stacks active, just decrement active_count
+      // If there are more stacks active, just decrement active_count (don't change expires_at)
       if (activeCount > 1) {
         await supabase
           .from('user_inventory')
           .update({ 
-            active_count: activeCount - 1,
-            activated_at: new Date().toISOString() // Reset timer for remaining stacks
+            active_count: activeCount - 1
           })
           .eq('id', inventoryId);
         
         setInventory(prev => prev.map(i => 
           i.id === inventoryId 
-            ? { ...i, active_count: activeCount - 1, activated_at: new Date().toISOString() }
+            ? { ...i, active_count: activeCount - 1 }
             : i
         ));
       } else if (currentItem.quantity <= 0) {
@@ -104,12 +111,12 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
         // Last stack expired but quantity remains, deactivate
         await supabase
           .from('user_inventory')
-          .update({ is_active: false, activated_at: null, active_count: 0 })
+          .update({ is_active: false, activated_at: null, active_count: 0, expires_at: null })
           .eq('id', inventoryId);
         
         setInventory(prev => prev.map(i => 
           i.id === inventoryId 
-            ? { ...i, is_active: false, activated_at: null, active_count: 0, timeLeft: null }
+            ? { ...i, is_active: false, activated_at: null, active_count: 0, expires_at: null, timeLeft: null }
             : i
         ));
       }
@@ -303,21 +310,24 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
         if (error) throw error;
         showToast(`${item.shop_items.name} activated! ${item.quantity} protection${item.quantity > 1 ? 's' : ''} ready.`, "success");
       } else {
-        // Timed items: Use active_count to track stacks, decrement quantity
-        const currentActiveCount = item.active_count || 0;
+        // Timed items: Use expires_at for accurate tracking
         const boostDurationMs = durationHours * 60 * 60 * 1000;
-        let finalActivationAt;
+        const now = new Date();
+        let newExpiresAt;
+        let newActivatedAt;
 
-        if (item.is_active && item.activated_at) {
-          // EXTENSION: Calculate new expiry based on current + new duration
-          const currentStartTime = new Date(item.activated_at).getTime();
-          const currentExpiry = currentStartTime + (boostDurationMs * currentActiveCount);
-          const newExpiry = currentExpiry + boostDurationMs;
-          finalActivationAt = new Date(newExpiry - (boostDurationMs * (currentActiveCount + 1))).toISOString();
+        if (item.is_active && item.expires_at) {
+          // EXTENDING: Add duration to current expiry
+          const currentExpiry = new Date(item.expires_at).getTime();
+          newExpiresAt = new Date(Math.max(currentExpiry, now.getTime()) + boostDurationMs).toISOString();
+          newActivatedAt = item.activated_at; // Keep original start time
         } else {
           // FRESH START
-          finalActivationAt = new Date().toISOString();
+          newActivatedAt = now.toISOString();
+          newExpiresAt = new Date(now.getTime() + boostDurationMs).toISOString();
         }
+
+        const currentActiveCount = item.active_count || 0;
 
         const { error } = await supabase
           .from('user_inventory')
@@ -325,12 +335,13 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
             quantity: item.quantity - 1,
             active_count: currentActiveCount + 1,
             is_active: true,
-            activated_at: finalActivationAt
+            activated_at: newActivatedAt,
+            expires_at: newExpiresAt
           })
           .eq('id', inventoryId);
 
         if (error) throw error;
-        showToast(`${item.shop_items.name} ${item.is_active ? 'extended' : 'activated'}! (${currentActiveCount + 1}x active)`, "success");
+        showToast(`${item.shop_items.name} ${item.is_active ? 'extended' : 'activated'}! (${currentActiveCount + 1}x)`, "success");
       }
       
       await fetchData();
