@@ -123,16 +123,36 @@ export function useSpots(user, showToast, totalPoints, setTotalPoints, fetchLead
 
     if (upsertRows.length === 0) return showToast("Nodes secured today", "error");
 
-    const { error: uErr } = await supabase.from('user_spots').upsert(upsertRows, { onConflict: 'user_id, spot_id' });
-    if (uErr) return showToast("Sync error", "error");
+    // Use secure function instead of direct DB update
+    const spotsData = targets.map(spot => {
+      const info = newStreaks[spot.id];
+      const nextStreak = info.streak;
+      const earned = Math.floor((spot.points || 100) * getMultiplier(nextStreak) * activeXPBoost);
+      return {
+        spot_id: spot.id,
+        points: earned,
+        is_new: !spotStreaks[spot.id]
+      };
+    });
 
-    const newTotal = (totalPoints || 0) + totalEarned;
-    await supabase.from('profiles').update({ total_points: newTotal }).eq('id', user.id);
+    const { data, error } = await supabase.rpc('claim_spots', {
+      p_user_id: user.id,
+      p_spots: spotsData
+    });
+
+    if (error) {
+      console.error('Claim error:', error);
+      return showToast("Claim failed", "error");
+    }
+
+    if (data.error) {
+      return showToast(data.error, "error");
+    }
 
     setUnlockedSpots(prev => [...new Set([...prev, ...upsertRows.map(r => String(r.spot_id))])]);
     setSpotStreaks(newStreaks);
-    setTotalPoints(newTotal);
-    showToast(`Secured ${upsertRows.length} nodes: +${totalEarned} XP!`, "success");
+    setTotalPoints(data.newTotal);
+    showToast(`Secured ${targets.length} nodes: +${data.pointsEarned} XP!`, "success");
     if (fetchLeaderboard) fetchLeaderboard();
   };
 

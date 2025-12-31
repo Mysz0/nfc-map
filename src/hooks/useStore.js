@@ -135,24 +135,30 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
     if (totalPoints < item.price || loading) return;
     setLoading(true);
     try {
-      const { error: pointsError } = await supabase
-        .from('profiles')
-        .update({ total_points: totalPoints - item.price })
-        .eq('id', user.id);
+      const { data, error } = await supabase.rpc('purchase_item', {
+        p_user_id: user.id,
+        p_price: item.price,
+        p_item_id: item.id,
+        p_theme_name: null
+      });
 
-      if (pointsError) throw pointsError;
-
-      const existing = inventory.find(i => i.item_id === item.id);
-      if (existing) {
-        await supabase.from('user_inventory').update({ quantity: existing.quantity + 1 }).eq('id', existing.id);
-      } else {
-        await supabase.from('user_inventory').insert({ user_id: user.id, item_id: item.id, quantity: 1, is_active: false });
+      if (error) {
+        showToast(error.message || "Purchase failed", "error");
+        setLoading(false);
+        return;
       }
-      
-      setTotalPoints(prev => prev - item.price);
+
+      if (data.error) {
+        showToast(data.error, "error");
+        setLoading(false);
+        return;
+      }
+
+      setTotalPoints(data.newPoints);
       showToast(`Purchased ${item.name}!`, "success");
       await fetchData();
     } catch (err) {
+      console.error('Purchase error:', err);
       showToast("Purchase failed", "error");
     } finally {
       setLoading(false);
@@ -169,55 +175,32 @@ export function useStore(user, totalPoints, setTotalPoints, showToast) {
     
     setLoading(true);
     try {
-      // Get current unlocked themes from profiles
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('unlocked_themes, total_points')
-        .eq('id', user.id)
-        .single();
+      const { data, error } = await supabase.rpc('purchase_item', {
+        p_user_id: user.id,
+        p_price: price,
+        p_item_id: null,
+        p_theme_name: themeName
+      });
 
-      if (profileError) throw profileError;
-
-      const currentThemes = profile?.unlocked_themes || ['emerald', 'winter'];
-
-      // Check if already unlocked
-      if (currentThemes.includes(themeName)) {
-        showToast('Theme already unlocked!', 'error');
+      if (error) {
+        showToast(error.message || "Purchase failed", "error");
         setLoading(false);
         return;
       }
 
-      // Update profiles: deduct points and add theme
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          total_points: profile.total_points - price,
-          unlocked_themes: [...currentThemes, themeName]
-        })
-        .eq('id', user.id);
+      if (data.error) {
+        showToast(data.error, "error");
+        setLoading(false);
+        return;
+      }
 
-      if (updateError) throw updateError;
-      
-      setTotalPoints(prev => prev - price);
+      setTotalPoints(data.newPoints);
       showToast(`Unlocked ${themeName} theme!`, 'success');
-      
-      // Debug: Check if theme was added to profiles
-      const { data: checkProfile } = await supabase
-        .from('profiles')
-        .select('unlocked_themes')
-        .eq('id', user.id)
-        .single();
-      
-      console.log('Theme purchase complete. Unlocked themes in DB:', checkProfile?.unlocked_themes);
-      
-      // Refresh shop inventory
+      onSuccess?.();
       await fetchData();
-      
-      // Call success callback to refresh profile
-      if (onSuccess) onSuccess();
     } catch (err) {
-      console.error('Theme purchase error:', err);
-      showToast(`Purchase failed: ${err.message}`, "error");
+      console.error('Purchase error:', err);
+      showToast("Purchase failed", "error");
     } finally {
       setLoading(false);
     }
